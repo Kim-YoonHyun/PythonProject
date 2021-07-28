@@ -5,10 +5,6 @@ import math
 import time
 import Functions_mk2
 import os
-import torch
-
-
-cuda = torch.device('cuda')
 
 
 # ############################## Functions #############################################################################
@@ -617,35 +613,35 @@ def model_list_title(file_path, row_num, string_length, blank_num):
     print(wall)
 
 
-def pairwise_distance(point_cloud):
-    if point_cloud.size()[0] == 1:
-        point_cloud = torch.unsqueeze(torch.squeeze(point_cloud), dim=0)
-    point_cloud_trans = torch.transpose(point_cloud, 1, 2)
-    multi_mat = torch.mul(torch.matmul(point_cloud, point_cloud_trans), -2)
-    point_cloud_square = torch.square(point_cloud)
-    point_cloud_square_sum = torch.unsqueeze(torch.sum(point_cloud_square, 2), 0)
-    point_cloud_square_sum_trans = torch.transpose(point_cloud_square_sum, 1, 2)
-    Pairwise_matrix = -(point_cloud_square_sum + multi_mat + point_cloud_square_sum_trans)
-
-    return Pairwise_matrix
-
-
-def get_edge_feature(point_cloud, k_indices, k_value):
-    if point_cloud.size()[0] == 1:
-        point_cloud = torch.unsqueeze(torch.squeeze(point_cloud), dim=0)
-
-    point_cloud_expand_copy = torch.unsqueeze(point_cloud, dim=2).repeat(1, 1, k_value, 1)
-
-    feature_size = point_cloud.size()[-1]
-    shape1 = k_indices.size()[1]
-    shape2 = k_indices.size()[2]
-
-    k_indices_flat = torch.reshape(k_indices, shape=[shape1 * shape2])
-    knn_whole_flat = torch.index_select(point_cloud, dim=1, index=k_indices_flat)
-    knn_whole = torch.reshape(knn_whole_flat, shape=[1, shape1, shape2, feature_size])
-
-
-    edge_feature = torch.cat((point_cloud_expand_copy, knn_whole - point_cloud_expand_copy), dim=-1)
-    return edge_feature
+# def pairwise_distance(point_cloud):
+#     if point_cloud.size()[0] == 1:
+#         point_cloud = torch.unsqueeze(torch.squeeze(point_cloud), dim=0)
+#     point_cloud_trans = torch.transpose(point_cloud, 1, 2)
+#     multi_mat = torch.mul(torch.matmul(point_cloud, point_cloud_trans), -2)
+#     point_cloud_square = torch.square(point_cloud)
+#     point_cloud_square_sum = torch.unsqueeze(torch.sum(point_cloud_square, 2), 0)
+#     point_cloud_square_sum_trans = torch.transpose(point_cloud_square_sum, 1, 2)
+#     Pairwise_matrix = -(point_cloud_square_sum + multi_mat + point_cloud_square_sum_trans)
+#
+#     return Pairwise_matrix
+#
+#
+# def get_edge_feature(point_cloud, k_indices, k_value):
+#     if point_cloud.size()[0] == 1:
+#         point_cloud = torch.unsqueeze(torch.squeeze(point_cloud), dim=0)
+#
+#     point_cloud_expand_copy = torch.unsqueeze(point_cloud, dim=2).repeat(1, 1, k_value, 1)
+#
+#     feature_size = point_cloud.size()[-1]
+#     shape1 = k_indices.size()[1]
+#     shape2 = k_indices.size()[2]
+#
+#     k_indices_flat = torch.reshape(k_indices, shape=[shape1 * shape2])
+#     knn_whole_flat = torch.index_select(point_cloud, dim=1, index=k_indices_flat)
+#     knn_whole = torch.reshape(knn_whole_flat, shape=[1, shape1, shape2, feature_size])
+#
+#
+#     edge_feature = torch.cat((point_cloud_expand_copy, knn_whole - point_cloud_expand_copy), dim=-1)
+#     return edge_feature
 
 
