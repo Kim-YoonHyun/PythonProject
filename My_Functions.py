@@ -11,13 +11,13 @@ def read_stl(path, name, extension):
     file_data.SetFileName(path+name+extension)
     file_data.Update()
     data = file_data.GetOutput()
-    num_points = data.GetNumberOfPoints()
+    num_of_points = data.GetNumberOfPoints()
     point_list = []
     for i in range(num_points):
         point_list.append(data.GetPoint(i))
     point_list = np.array(point_list)
 
-    return num_points, point_list, name
+    return num_of_points, point_list, name
 
 
 def make_dict_with_sets(set_number, set_path, call_extension):

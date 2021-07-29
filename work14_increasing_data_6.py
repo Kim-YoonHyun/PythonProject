@@ -30,33 +30,33 @@ import vtk
 
 # ############################## parameter #############################################################################
 # A. stl 파일 불러오기. 현재 사용 중인 set 은 32번 부터이다.
-first_stl_set_order = 32  # 불러올 set 의 시작 번호
-last_stl_set_order = 33  # 불러올 set 의 마지막 번호
+first_stl_set_num = 32  # 불러올 set 의 시작 번호
+last_stl_set_num = 33  # 불러올 set 의 마지막 번호
 
 # B. Augmentation: translate
-trans_increasing_number = 2  # translate 를 통해 증가시킬 배수
+num_of_trans_increasing = 2  # translate 를 통해 증가시킬 배수
 trans_x = [-3.0, 3.0]  # x 축에 대한 최대 translate 범위
 trans_y = [-3.0, 3.0]  # y 축에 대한 최대 translate 범위
 trans_z = [-3.0, 3.0]  # z 축에 대한 최대 translate 범위
 
 # B. Augmentation: rotation
-rot_increasing_number = 2  # rotation 을 통해 증가시킬 배수
+num_of_rot_increasing = 2  # rotation 을 통해 증가시킬 배수
 rot_x = [-5.0, 5.0]  # x 축에 대한 최대 rotation 범위
 rot_y = [-5.0, 5.0]  # y 축에 대한 최대 rotation 범위
 rot_z = [-5.0, 5.0]  # z 축에 대한 최대 rotation 범위
 
 # C. up random sampling
-skin_points = 3000  # 증가시킬 skin 의 point 갯수
-Bone1_points = 1500  # 증가시킬 Bone1 의 point 갯수
-Bone2_points = 1500  # 증가시킬 Bone2 의 point 갯수
+num_of_skin_points = 3000  # 증가시킬 skin 의 point 갯수
+num_of_Bone1_points = 1500  # 증가시킬 Bone1 의 point 갯수
+num_of_Bone2_points = 1500  # 증가시킬 Bone2 의 point 갯수
 max_length = 0.1  # 새로운 점을 생성하기 위한 기준 길이.
-rand_sam_num = 2
+num_of_rand_sam = 2
 
 # D. 랜덤 타겟 생성
 tar_x = [-18.0, 18.0]
 tar_y = [-3.0, 7.0]
 tar_z = [-2.0, 2.0]
-tar_increasing_number = 2
+num_of_tar_increasing = 2
 
 
 # ############################## Make dict #############################################################################
@@ -70,7 +70,8 @@ target_property_num = 4
 
 # =======================================================
 # set 번호 범위 지정
-stl_set_order_range = np.array(list(range(first_stl_set_order, last_stl_set_order + 1)))
+stl_set_order_range = list(range(first_stl_set_num, last_stl_set_num + 1))
+stl_set_path = f'stl/set'
 
 
 # 지정한 범위의 stl 전부 불러오기
@@ -78,34 +79,67 @@ def read_stl(path, stl_name):
     file_data = vtk.vtkSTLReader()
     file_data.SetFileName(f'{path}/{stl_name}.stl')
     file_data.Update()
-    stl_point_num = file_data.GetOutput().GetNumberOfPoints()
-    stl_vertices = []
-    for i in range(stl_point_num):
-        stl_vertices.append(file_data.GetOutput().GetPoint(i))
+    num_of_stl_points = file_data.GetOutput().GetNumberOfPoints()
+    stl_vertices = list(
+        list(file_data.GetOutput().GetPoint(i)) for i in range(num_of_stl_points)
+    )
+    return stl_vertices, num_of_stl_points
 
-    return stl_vertices, stl_point_num
+def make_stl_set_dictionary(first_stl_set_num, last_stl_set_num, stl_set_path):
+    stl_set_property_list = []
 
-stl_name_list = []
-stl_point_num_list = []
+    for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
+        # 빈 리스트 준비
+        stl_name_list = []
+        num_of_stl_points_list = []
+        stl_vertices_list = []
 
-file_list = os.listdir(f'stl/set32')
-for i in range(len(file_list)):
-    if file_list[i].split('.')[-1] == 'stl':
-        stl_name = file_list[i].split('.')[-2]
-        stl_name_list.append(stl_name)
-        stl_vertices, stl_point_num = read_stl(f'stl/set32', stl_name)
-        stl_point_num_list.append(stl_point_num)
-print(stl_name_list)
-print(stl_point_num_list)
+        # stl set 번호 별 이름, 좌표, 포인트 갯수 불러오기
+        file_list = os.listdir(f'{stl_set_path}{stl_set_num}')
+        for i in range(len(file_list)):
+            if file_list[i].split('.')[-1] == 'stl':
+                stl_name = file_list[i].split('.')[-2]
+                stl_vertices, num_of_stl_points = read_stl(f'{stl_set_path}{stl_set_num}', stl_name)
+                stl_name_list.append(stl_name)
+                num_of_stl_points_list.append(num_of_stl_points)
+                stl_vertices_list.append(stl_vertices)
 
+        # key list를 통해 불러온 정보와 겹쳐서 dict 만들기
+        key_list = ['stl_name', 'num_of_stl_points', 'stl_vertices']
+        new_list = list(
+            [stl_name_list.pop(), num_of_stl_points_list.pop(), stl_vertices_list.pop()]
+            for i in range(len(stl_name_list))
+        )
+        property = list(dict(zip(key_list, new_list[i])) for i in range(len(new_list)))
+        
+        # 모든 stl set의 property dictionary 합치기
+        stl_set_property_list.append(property)
 
-sample_dict = {
-    {'stl name':'D1_set32', 'stl point num':409, 'stl vertices':[[1, 2, 3]]},
-    {'stl name':'L3_set32', 'stl point num':1204, 'stl vertices':[[5, 3, 2]]}
-}
+    return stl_set_property_list
 
+stl_set_property_list = make_stl_set_dictionary(first_stl_set_num, last_stl_set_num, stl_set_path)
 
+for i in range(2):
+    for j in range(4):
+            print(stl_set_property_list[i][j]['stl_name'])
+            print(stl_set_property_list[i][j]['num_of_stl_points'])
+            print(np.array(stl_set_property_list[i][j]['stl_vertices']).shape)
+            print()
+    print()
 
+exit()
+
+# stl_set32_property = [
+#     {'stl name':'D1_set32', 'stl point num':409, 'stl vertices':[[1, 2, 3]]},
+#     {'stl name':'L3_set32', 'stl point num':1040, 'stl vertices':[[5, 3, 2]]},
+#     {'stl name':'L4_set32', 'stl point num':1011, 'stl vertices':[[5, 3, 2]]}
+# ]
+#
+# stl_set33_property = [
+#     {'stl name':'D1_set33', 'stl point num':209, 'stl vertices':[[1, 2, 3]]},
+#     {'stl name':'L3_set33', 'stl point num':940, 'stl vertices':[[5, 3, 2]]},
+#     {'stl name':'L4_set33', 'stl point num':911, 'stl vertices':[[5, 3, 2]]}
+# ]
 
 
 exit()
