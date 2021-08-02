@@ -17,21 +17,22 @@
 
 # _6
 # Functions 을 직접 불러오는 방식으로 다시 되돌림
-# 코드 깔끔하게 정리
+# 코드 리뉴얼
 
 
 import numpy as np
 import os
-import My_Functions
-import Functions
-import Functions_mk2
+import my_functions
+import random
+# import Functions
+# import Functions_mk2
 
 import vtk
 
 # ############################## parameter #############################################################################
 # A. stl 파일 불러오기. 현재 사용 중인 set 은 32번 부터이다.
 first_stl_set_num = 32  # 불러올 set 의 시작 번호
-last_stl_set_num = 33  # 불러올 set 의 마지막 번호
+last_stl_set_num = 35  # 불러올 set 의 마지막 번호
 
 # B. Augmentation: translate
 num_of_trans_increasing = 2  # translate 를 통해 증가시킬 배수
@@ -73,61 +74,42 @@ target_property_num = 4
 stl_set_order_range = list(range(first_stl_set_num, last_stl_set_num + 1))
 stl_set_path = f'stl/set'
 
-
-# 지정한 범위의 stl 전부 불러오기
-def read_stl(path, stl_name):
-    file_data = vtk.vtkSTLReader()
-    file_data.SetFileName(f'{path}/{stl_name}.stl')
-    file_data.Update()
-    num_of_stl_points = file_data.GetOutput().GetNumberOfPoints()
-    stl_vertices = list(
-        list(file_data.GetOutput().GetPoint(i)) for i in range(num_of_stl_points)
-    )
-    return stl_vertices, num_of_stl_points
-
-def make_stl_set_dictionary(first_stl_set_num, last_stl_set_num, stl_set_path):
-    stl_set_property_list = []
-
-    for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
-        # 빈 리스트 준비
-        stl_name_list = []
-        num_of_stl_points_list = []
-        stl_vertices_list = []
-
-        # stl set 번호 별 이름, 좌표, 포인트 갯수 불러오기
-        file_list = os.listdir(f'{stl_set_path}{stl_set_num}')
-        for i in range(len(file_list)):
-            if file_list[i].split('.')[-1] == 'stl':
-                stl_name = file_list[i].split('.')[-2]
-                stl_vertices, num_of_stl_points = read_stl(f'{stl_set_path}{stl_set_num}', stl_name)
-                stl_name_list.append(stl_name)
-                num_of_stl_points_list.append(num_of_stl_points)
-                stl_vertices_list.append(stl_vertices)
-
-        # key list를 통해 불러온 정보와 겹쳐서 dict 만들기
-        key_list = ['stl_name', 'num_of_stl_points', 'stl_vertices']
-        new_list = list(
-            [stl_name_list.pop(), num_of_stl_points_list.pop(), stl_vertices_list.pop()]
-            for i in range(len(stl_name_list))
-        )
-        property = list(dict(zip(key_list, new_list[i])) for i in range(len(new_list)))
-        
-        # 모든 stl set의 property dictionary 합치기
-        stl_set_property_list.append(property)
-
-    return stl_set_property_list
-
-stl_set_property_list = make_stl_set_dictionary(first_stl_set_num, last_stl_set_num, stl_set_path)
-
-for i in range(2):
-    for j in range(4):
-            print(stl_set_property_list[i][j]['stl_name'])
-            print(stl_set_property_list[i][j]['num_of_stl_points'])
-            print(np.array(stl_set_property_list[i][j]['stl_vertices']).shape)
-            print()
-    print()
-
-exit()
+# stl_set_property_list = []
+# for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
+#     # 빈 리스트 준비
+#     stl_name_list = []
+#     num_of_stl_points_list = []
+#     stl_vertices_list = []
+#
+#     # stl set 번호 별 이름, 좌표, 포인트 갯수 불러오기
+#     file_list = os.listdir(f'{stl_set_path}{stl_set_num}')
+#     for i in range(len(file_list)):
+#         if file_list[i].split('.')[-1] == 'stl':
+#             stl_name = file_list[i].split('.')[-2]
+#             stl_vertices, num_of_stl_points = my_functions.read_stl(f'{stl_set_path}{stl_set_num}', stl_name)
+#             stl_name_list.append(stl_name)
+#             num_of_stl_points_list.append(num_of_stl_points)
+#             stl_vertices_list.append(stl_vertices)
+#
+#     # key list를 통해 불러온 정보와 겹쳐서 dict 만들기
+#     key_list = ['stl_name', 'num_of_stl_points', 'stl_vertices']
+#     new_list = list(
+#         [stl_name_list.pop(0), num_of_stl_points_list.pop(0), stl_vertices_list.pop(0)]
+#         for i in range(len(stl_name_list))
+#     )
+#     property = list(dict(zip(key_list, new_list[i])) for i in range(len(new_list)))
+#
+#     # 모든 stl set의 property dictionary 합치기
+#     stl_set_property_list.append(property)
+#
+# for i in range(last_stl_set_num - first_stl_set_num + 1):
+#     for j in range(4):
+#             print(f"{stl_set_property_list[i][j]['stl_name'].rjust(10)}", end=', ')
+#             print(f"{stl_set_property_list[i][j]['num_of_stl_points']:4d}", end=', ')
+#             print(f"{np.array(stl_set_property_list[i][j]['stl_vertices']).shape}")
+#     print()
+#
+# exit()
 
 # stl_set32_property = [
 #     {'stl name':'D1_set32', 'stl point num':409, 'stl vertices':[[1, 2, 3]]},
@@ -141,22 +123,109 @@ exit()
 #     {'stl name':'L4_set33', 'stl point num':911, 'stl vertices':[[5, 3, 2]]}
 # ]
 
+stl_set_property_list = []
+
+for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
+    # 빈 리스트 준비
+    # num_of_stl_points_list = []
+    # all_stl_vertices_list = []
+
+    # stl set 번호 별 이름, 좌표, 포인트 갯수 불러오기
+    file_list = os.listdir(f'{stl_set_path}{stl_set_num}')
+    for i in range(len(file_list)):
+        if file_list[i].split('.')[-1] == 'stl':
+            stl_vertices_list, num_of_stl_points = my_functions.read_stl(f'{stl_set_path}{stl_set_num}', file_list[i].split('.')[-2])
+            stl_vertices_array = np.array(stl_vertices_list)
+            index_array = np.array([j for j in range(num_of_stl_points)])
+            # Disc 데이터를 target 데이터로 바꾸기
+            if file_list[i].split('.')[-2].split('_')[0][0] == 'D':
+                stl_vertices_array_center = np.average(stl_vertices_array, axis=0)
+                stl_vertices_array_min = np.min(stl_vertices_array, axis=0)
+                while  stl_vertices_array_center[1] > stl_vertices_array_min[1] - 1:
+                    stl_vertices_array_center[1] -= 1
+                stl_vertices_array_center = np.expand_dims(stl_vertices_array_center, axis=0)
+
+            # 그외 skin, bone 데이터의 경우 >>> 작업중
+            else:
+                def euclidean_distance(start, end):
+                    value = np.sqrt(np.sum(np.square(np.subtract(start, end)), axis=-1))
+                    return value
+
+                for i in range(num_of_stl_points):
+                    # rand_index = random.randint(0, num_of_stl_points)
+                    rand_index = 2
+                    rand_vertex = stl_vertices_array[rand_index]
+
+                    stl_vertices_array = np.delete(stl_vertices_array, rand_index, axis=0)
+                    index_array = np.delete(index_array, rand_index, axis=0)
+                    euclidean_distance = euclidean_distance(rand_vertex, stl_vertices_array)
+                    print(np.min(euclidean_distance))
+                    c = dict(zip(euclidean_distance, index_array))
+                    print(c[np.min(euclidean_distance)])
+                    print(c)
+                    # print(sorted(c.values()))
+                    # print(c)
+                    # print(c[0])
+                    exit()
+
+
+
+
+                    # euclidean_distance_sorted = sorted(euclidean_distance)
+                #     print(euclidean_distance_sorted)
+
+                # a = [1, 2, 3]
+                # b = np.array([
+                #     [2, -1, 4],
+                #     [6,  2, 0]
+                #      ])
+                # print(euclidean_distance(rand_vertex, stl_vertices_array).shape)
+                # print(np.subtract(a, b))
+                # print(np.square(np.subtract(a, b)))
+                # print(np.sum(np.square(np.subtract(a, b)), axis=-1))
+                # print(np.sqrt(np.sum(np.square(np.subtract(a, b)), axis=-1)))
+
+                exit()
+
+
+
+
+
+
+
+
+
+            # num_of_stl_points_list.append(num_of_stl_points)
+            # all_stl_vertices_list.append(stl_vertices_list)
+
+    # key list를 통해 불러온 정보와 겹쳐서 dict 만들기
+    key_list = ['num_of_stl_points', 'stl_vertices']
+    new_list = list(
+        [num_of_stl_points_list.pop(0), all_stl_vertices_list.pop(0)]
+        for i in range(len(num_of_stl_points_list))
+    )
+    property = list(dict(zip(key_list, new_list[i])) for i in range(len(new_list)))
+
+    # 모든 stl set의 property dictionary 합치기
+    stl_set_property_list.append(property)
+
+for i in range(last_stl_set_num - first_stl_set_num + 1):
+    for j in range(4):
+            print(f"{stl_set_property_list[i][j]['num_of_stl_points']:4d}", end=', ')
+            print(f"{np.array(stl_set_property_list[i][j]['stl_vertices']).shape}")
+    print()
 
 exit()
 
-set, a = My_Functions.make_set(set_num, target_property_num, './stl/set', '.stl')
+# # 모든 set 의 model 정보 print
+# for i in range(set_num.shape[0]):
+#     print(f"size of {set[set_num[i]]['property0']['name of model']} : {set[set_num[i]]['property0']['array'].shape}")
+#     print(f"size of {set[set_num[i]]['property1']['name of model']} : {set[set_num[i]]['property1']['array'].shape}")
+#     print(f"size of {set[set_num[i]]['property2']['name of model']} : {set[set_num[i]]['property2']['array'].shape}")
+#     print(f"size of {set[set_num[i]]['property3']['name of model']} : {set[set_num[i]]['property3']['array'].shape}")
+#     print(f"number of all points = {set[set_num[i]]['property0']['number of point'] + set[set_num[i]]['property1']['number of point'] + set[set_num[i]]['property2']['number of point'] + set[set_num[i]]['property3']['number of point']}")
+#     print('\n')
 
-exit()
-# 모든 set 의 model 정보 print
-for i in range(set_num.shape[0]):
-    print(f"size of {set[set_num[i]]['property0']['name of model']} : {set[set_num[i]]['property0']['array'].shape}")
-    print(f"size of {set[set_num[i]]['property1']['name of model']} : {set[set_num[i]]['property1']['array'].shape}")
-    print(f"size of {set[set_num[i]]['property2']['name of model']} : {set[set_num[i]]['property2']['array'].shape}")
-    print(f"size of {set[set_num[i]]['property3']['name of model']} : {set[set_num[i]]['property3']['array'].shape}")
-    print(f"number of all points = {set[set_num[i]]['property0']['number of point'] + set[set_num[i]]['property1']['number of point'] + set[set_num[i]]['property2']['number of point'] + set[set_num[i]]['property3']['number of point']}")
-    print('\n')
-
-exit()
 # ############################## Increasing data #######################################################################
 # 모든 set 의 skin, Bone1, Bone2 를 따로 모음. 모델마다 point 갯수가 다르기 때문.
 all_origin_Skin_array = []
