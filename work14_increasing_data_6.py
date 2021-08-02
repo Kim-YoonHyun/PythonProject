@@ -22,7 +22,8 @@
 
 import numpy as np
 import os
-import my_functions
+import functions_my
+import copy
 import random
 # import Functions
 # import Functions_mk2
@@ -32,7 +33,7 @@ import vtk
 # ############################## parameter #############################################################################
 # A. stl 파일 불러오기. 현재 사용 중인 set 은 32번 부터이다.
 first_stl_set_num = 32  # 불러올 set 의 시작 번호
-last_stl_set_num = 35  # 불러올 set 의 마지막 번호
+last_stl_set_num = 33  # 불러올 set 의 마지막 번호
 
 # B. Augmentation: translate
 num_of_trans_increasing = 2  # translate 를 통해 증가시킬 배수
@@ -47,11 +48,10 @@ rot_y = [-5.0, 5.0]  # y 축에 대한 최대 rotation 범위
 rot_z = [-5.0, 5.0]  # z 축에 대한 최대 rotation 범위
 
 # C. up random sampling
-num_of_skin_points = 3000  # 증가시킬 skin 의 point 갯수
-num_of_Bone1_points = 1500  # 증가시킬 Bone1 의 point 갯수
-num_of_Bone2_points = 1500  # 증가시킬 Bone2 의 point 갯수
-max_length = 0.1  # 새로운 점을 생성하기 위한 기준 길이.
-num_of_rand_sam = 2
+up_num_of_skin_points = 2500  # 증가시킬 skin 의 point 갯수
+up_num_of_bone1_points = 1500  # 증가시킬 Bone1 의 point 갯수
+up_num_of_bone2_points = 1500  # 증가시킬 Bone2 의 point 갯수
+num_of_rand_sam = 3
 
 # D. 랜덤 타겟 생성
 tar_x = [-18.0, 18.0]
@@ -66,7 +66,7 @@ num_of_tar_increasing = 2
 # property1 : Bone1
 # property2 : Bone2
 # property3 : Skin
-target_property_num = 4
+# target_property_num = 4
 
 
 # =======================================================
@@ -124,156 +124,96 @@ stl_set_path = f'stl/set'
 # ]
 
 stl_set_property_list = []
+all_target_list = []
+up_all_bone1_vertices_list = []
+up_all_bone2_vertices_list = []
+up_all_skin_vertices_list = []
 
 for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
-    # 빈 리스트 준비
-    # num_of_stl_points_list = []
-    # all_stl_vertices_list = []
-
-    # stl set 번호 별 이름, 좌표, 포인트 갯수 불러오기
+    # stl set 번호 별 좌표, 포인트 갯수 불러오기
     file_list = os.listdir(f'{stl_set_path}{stl_set_num}')
+    bone_flag = 1
     for i in range(len(file_list)):
         if file_list[i].split('.')[-1] == 'stl':
-            stl_vertices_list, num_of_stl_points = my_functions.read_stl(f'{stl_set_path}{stl_set_num}', file_list[i].split('.')[-2])
-            stl_vertices_array = np.array(stl_vertices_list)
-            index_array = np.array([j for j in range(num_of_stl_points)])
+            stl_name = file_list[i].split('.')[-2]
+            stl_vertices_list, num_of_stl_points = functions_my.read_stl(f'{stl_set_path}{stl_set_num}', stl_name)
+            print(stl_name, np.array(stl_vertices_list).shape, end=' --> ')
+
             # Disc 데이터를 target 데이터로 바꾸기
-            if file_list[i].split('.')[-2].split('_')[0][0] == 'D':
+            if stl_name.split('_')[0][0] == 'D':
+                stl_vertices_array = np.array(stl_vertices_list)
                 stl_vertices_array_center = np.average(stl_vertices_array, axis=0)
                 stl_vertices_array_min = np.min(stl_vertices_array, axis=0)
-                while  stl_vertices_array_center[1] > stl_vertices_array_min[1] - 1:
+                while stl_vertices_array_center[1] > stl_vertices_array_min[1] - 1:
                     stl_vertices_array_center[1] -= 1
-                stl_vertices_array_center = np.expand_dims(stl_vertices_array_center, axis=0)
+                target_vertex = np.expand_dims(stl_vertices_array_center, axis=0)
+                all_target_list.append(target_vertex)
+                all_target_vertex_array = np.array(all_target_list)
+                print(f'target', target_vertex.shape)
 
-            # 그외 skin, bone 데이터의 경우 >>> 작업중
+            # 그외 skin, bone 데이터의 경우
+            elif stl_name.split('_')[0][0] == 'L' and bone_flag == 1:
+                bone_flag += 1
+                up_sampled_bone1_vertices_list = functions_my.up_sampling(stl_vertices_list, up_num_of_bone1_points - num_of_stl_points)
+                up_all_bone1_vertices_list.append(up_sampled_bone1_vertices_list)
+                print(np.array(up_sampled_bone1_vertices_list).shape)
+            elif stl_name.split('_')[0][0] == 'L' and bone_flag == 2:
+                up_sampled_bone2_vertices_list = functions_my.up_sampling(stl_vertices_list, up_num_of_bone2_points - num_of_stl_points)
+                up_all_bone2_vertices_list.append(up_sampled_bone2_vertices_list)
+                print(np.array(up_sampled_bone2_vertices_list).shape)
+            elif stl_name.split('_')[0][0] == 'S':
+                up_sampled_skin_vertices_list = functions_my.up_sampling(stl_vertices_list, up_num_of_skin_points - num_of_stl_points)
+                up_all_skin_vertices_list.append(up_sampled_skin_vertices_list)
+                print(np.array(up_sampled_skin_vertices_list).shape)
             else:
-                def euclidean_distance(start, end):
-                    value = np.sqrt(np.sum(np.square(np.subtract(start, end)), axis=-1))
-                    return value
+                continue
+    print('\n')
 
-                for i in range(num_of_stl_points):
-                    # rand_index = random.randint(0, num_of_stl_points)
-                    rand_index = 2
-                    rand_vertex = stl_vertices_array[rand_index]
+print('up sampled')
+print(all_target_vertex_array.shape, end=' ')
+print(np.array(up_all_bone1_vertices_list).shape, end=' ')
+print(np.array(up_all_bone2_vertices_list).shape, end=' ')
+print(np.array(up_all_skin_vertices_list).shape, '\n')
 
-                    stl_vertices_array = np.delete(stl_vertices_array, rand_index, axis=0)
-                    index_array = np.delete(index_array, rand_index, axis=0)
-                    euclidean_distance = euclidean_distance(rand_vertex, stl_vertices_array)
-                    print(np.min(euclidean_distance))
-                    c = dict(zip(euclidean_distance, index_array))
-                    print(c[np.min(euclidean_distance)])
-                    print(c)
-                    # print(sorted(c.values()))
-                    # print(c)
-                    # print(c[0])
-                    exit()
+ran_all_target_vertex_array = np.array([np.tile(all_target_vertex_array[i], [3, 1, 1])[j]
+                                        for i in range(len(all_target_vertex_array))
+                                        for j in range(num_of_rand_sam)])
+ran_up_all_bone1_vertices_list = functions_my.random_sampling(up_all_bone1_vertices_list, up_num_of_bone1_points, num_of_rand_sam)
+ran_up_all_bone2_vertices_list = functions_my.random_sampling(up_all_bone2_vertices_list, up_num_of_bone2_points, num_of_rand_sam)
+ran_up_all_skin_vertices_list = functions_my.random_sampling(up_all_skin_vertices_list, up_num_of_skin_points, num_of_rand_sam)
 
+print('random + up sampled')
+print(ran_all_target_vertex_array.shape, end=' ')
+print(np.array(ran_up_all_bone1_vertices_list).shape, end=' ')
+print(np.array(ran_up_all_bone2_vertices_list).shape, end=' ')
+print(np.array(ran_up_all_skin_vertices_list).shape, '\n')
 
+### >>> rand sampling 까지 완료
+# x, y, z 방향으로 offset 거리를 생성하는 function
+def make_offset_distance(number, x1, x2, y1, y2, z1, z2):
+    x = [round(random.uniform(x1, x2), 5) for _ in range(number)]
+    y = [round(random.uniform(y1, y2), 5) for _ in range(number)]
+    z = [round(random.uniform(z1, z2), 5) for _ in range(number)]
+    return np.array(x), np.array(y), np.array(z)
 
-
-                    # euclidean_distance_sorted = sorted(euclidean_distance)
-                #     print(euclidean_distance_sorted)
-
-                # a = [1, 2, 3]
-                # b = np.array([
-                #     [2, -1, 4],
-                #     [6,  2, 0]
-                #      ])
-                # print(euclidean_distance(rand_vertex, stl_vertices_array).shape)
-                # print(np.subtract(a, b))
-                # print(np.square(np.subtract(a, b)))
-                # print(np.sum(np.square(np.subtract(a, b)), axis=-1))
-                # print(np.sqrt(np.sum(np.square(np.subtract(a, b)), axis=-1)))
-
-                exit()
-
-
-
-
-
-
-
-
-
-            # num_of_stl_points_list.append(num_of_stl_points)
-            # all_stl_vertices_list.append(stl_vertices_list)
-
-    # key list를 통해 불러온 정보와 겹쳐서 dict 만들기
-    key_list = ['num_of_stl_points', 'stl_vertices']
-    new_list = list(
-        [num_of_stl_points_list.pop(0), all_stl_vertices_list.pop(0)]
-        for i in range(len(num_of_stl_points_list))
-    )
-    property = list(dict(zip(key_list, new_list[i])) for i in range(len(new_list)))
-
-    # 모든 stl set의 property dictionary 합치기
-    stl_set_property_list.append(property)
-
-for i in range(last_stl_set_num - first_stl_set_num + 1):
-    for j in range(4):
-            print(f"{stl_set_property_list[i][j]['num_of_stl_points']:4d}", end=', ')
-            print(f"{np.array(stl_set_property_list[i][j]['stl_vertices']).shape}")
-    print()
-
+for i in range(len(ran_up_all_bone1_vertices_list)):
+    x_offset, y_offset, z_offset = make_offset_distance(num_of_trans_increasing,
+                                                        trans_x[0], trans_x[1],
+                                                        trans_y[0], trans_y[1],
+                                                        trans_z[0], trans_z[1])
+    print(x_offset, y_offset, z_offset)
 exit()
-
-# # 모든 set 의 model 정보 print
-# for i in range(set_num.shape[0]):
-#     print(f"size of {set[set_num[i]]['property0']['name of model']} : {set[set_num[i]]['property0']['array'].shape}")
-#     print(f"size of {set[set_num[i]]['property1']['name of model']} : {set[set_num[i]]['property1']['array'].shape}")
-#     print(f"size of {set[set_num[i]]['property2']['name of model']} : {set[set_num[i]]['property2']['array'].shape}")
-#     print(f"size of {set[set_num[i]]['property3']['name of model']} : {set[set_num[i]]['property3']['array'].shape}")
-#     print(f"number of all points = {set[set_num[i]]['property0']['number of point'] + set[set_num[i]]['property1']['number of point'] + set[set_num[i]]['property2']['number of point'] + set[set_num[i]]['property3']['number of point']}")
-#     print('\n')
-
-# ############################## Increasing data #######################################################################
-# 모든 set 의 skin, Bone1, Bone2 를 따로 모음. 모델마다 point 갯수가 다르기 때문.
-all_origin_Skin_array = []
-all_origin_Bone1_array = []
-all_origin_Bone2_array = []
-all_origin_tar_array = []
-for i in range(set_num.shape[0]):
-    all_origin_Bone1_array.append(set[set_num[i]]['property1']['array'])
-    all_origin_Bone2_array.append(set[set_num[i]]['property2']['array'])
-    all_origin_Skin_array.append(set[set_num[i]]['property3']['array'])
-    all_origin_tar_array.append(set[set_num[i]]['property4']['array'])
-all_origin_Bone1_array = np.array(all_origin_Bone1_array)
-all_origin_Bone2_array = np.array(all_origin_Bone2_array)
-all_origin_Skin_array = np.array(all_origin_Skin_array)
-all_origin_tar_array = np.array(all_origin_tar_array)
-
-# =======================================================
-# translate & Up sampling
-Bone1_dummy_array = np.zeros([1, Bone1_points, 3])
-Bone2_dummy_array = np.zeros([1, Bone2_points, 3])
-Skin_dummy_array = np.zeros([1, skin_points, 3])
-tar_dummy_array = np.zeros([1, 1, 3])
-
-# original data processing
-all_origin_up_Skin_array = Functions.up_sampling(all_origin_Skin_array, skin_points, max_length)
-all_origin_up_Bone1_array = Functions.up_sampling(all_origin_Bone1_array, Bone1_points, max_length)
-all_origin_up_Bone2_array = Functions.up_sampling(all_origin_Bone2_array, Bone2_points, max_length)
-
-origin_case = np.concatenate((all_origin_up_Skin_array, all_origin_up_Bone1_array), axis=1)
-origin_case = np.concatenate((origin_case, all_origin_up_Bone2_array), axis=1)
-origin_case = np.concatenate((origin_case, all_origin_tar_array), axis=1)
-
-
-print(all_origin_up_Skin_array.shape)
-print(all_origin_up_Bone1_array.shape)
-print(all_origin_up_Bone2_array.shape)
-print(origin_case.shape)
-
 # translate
-if trans_increasing_number == 0:
-    all_inc_up_Skin_array = all_origin_up_Skin_array
-    all_inc_up_Bone1_array = all_origin_up_Bone1_array
-    all_inc_up_Bone2_array = all_origin_up_Bone2_array
-    all_inc_tar_array = all_origin_tar_array
+if num_of_tar_increasing == 0:
+    # all_inc_up_Skin_array = all_origin_up_Skin_array
+    # all_inc_up_Bone1_array = all_origin_up_Bone1_array
+    # all_inc_up_Bone2_array = all_origin_up_Bone2_array
+    # all_inc_tar_array = all_origin_tar_array
+    a = 1
 else:
     for i in range(len(set)):
-        x_offset, y_offset, z_offset = Functions.make_offset_distance(trans_increasing_number, trans_x[0], trans_x[1],
-                                                                      trans_y[0], trans_y[1], trans_z[0], trans_z[1])
+        # x_offset, y_offset, z_offset = Functions.make_offset_distance(trans_increasing_number, trans_x[0], trans_x[1],
+        #                                                               trans_y[0], trans_y[1], trans_z[0], trans_z[1])
 
         # Skin
         Skin_temp = Functions.make_all_offset(all_origin_up_Skin_array[i], x_offset, y_offset, z_offset,
