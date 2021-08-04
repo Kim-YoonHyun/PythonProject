@@ -6,6 +6,13 @@ import copy
 import os
 
 def read_stl(path, stl_name):
+    """
+    function of read stl file vertices and number of point information
+
+    path: stl file path
+    stl_name: stl file name
+    return: stl vertices list, number of stl coordinate points
+    """
     file_data = vtk.vtkSTLReader()
     file_data.SetFileName(f'{path}/{stl_name}.stl')
     file_data.Update()
@@ -16,24 +23,37 @@ def read_stl(path, stl_name):
     return stl_vertices_list, num_of_stl_points
 
 def euclidean_distance(start, end):
+    """
+    function of calculate the euclidean distance from start to end
+    :param start: start vertex
+    :param end: end vertex
+    :return: euclidean distance
+    """
+
     value = np.sqrt(np.sum(np.square(np.subtract(start, end)), axis=-1))
     return value
 
 def up_sampling(stl_vertices_list, num_of_new_vertices):
-                    temp_stl_vertices_list = copy.deepcopy(stl_vertices_list)
-                    for i in range(num_of_new_vertices):
-                        rand_index = random.randint(0, len(temp_stl_vertices_list) - 1)
-                        rand_vertex = temp_stl_vertices_list.pop(rand_index)
-                        index_list = [j for j in range(len(temp_stl_vertices_list))]
+    """
+    function of make some new vertices to up sampling the vertices list
+    :param stl_vertices_list: initial vertices
+    :param num_of_new_vertices: number of make new vertices
+    :return: up sampled vertices list
+    """
+    temp_stl_vertices_list = copy.deepcopy(stl_vertices_list)
+    for i in range(num_of_new_vertices):
+        rand_index = random.randint(0, len(temp_stl_vertices_list) - 1)
+        rand_vertex = temp_stl_vertices_list.pop(rand_index)
+        index_list = [j for j in range(len(temp_stl_vertices_list))]
 
-                        distance_of_rand_vertex_to_rest_vertices = euclidean_distance(rand_vertex, temp_stl_vertices_list)
-                        temp_dict = dict(zip(distance_of_rand_vertex_to_rest_vertices, index_list))
-                        nearest_index = temp_dict[np.min(distance_of_rand_vertex_to_rest_vertices)]
-                        nearest_vertex = temp_stl_vertices_list[nearest_index]
-                        middle_vertex = list(np.average((np.array(rand_vertex), np.array(nearest_vertex)), axis=0))
-                        stl_vertices_list.append(middle_vertex)
+        distance_of_rand_vertex_to_rest_vertices = euclidean_distance(rand_vertex, temp_stl_vertices_list)
+        temp_dict = dict(zip(distance_of_rand_vertex_to_rest_vertices, index_list))
+        nearest_index = temp_dict[np.min(distance_of_rand_vertex_to_rest_vertices)]
+        nearest_vertex = temp_stl_vertices_list[nearest_index]
+        middle_vertex = list(np.average((np.array(rand_vertex), np.array(nearest_vertex)), axis=0))
+        stl_vertices_list.append(middle_vertex)
 
-                    return stl_vertices_list
+    return stl_vertices_list
 
 def random_sampling(stl_vertices_list, up_num_of_stl_points, num_of_rand_sam):
     ran_up_all_vertices_list = []
@@ -45,6 +65,8 @@ def random_sampling(stl_vertices_list, up_num_of_stl_points, num_of_rand_sam):
                 temp_list.append(stl_vertices_list[i].pop(rand_index))
             ran_up_all_vertices_list.append(temp_list)
     return ran_up_all_vertices_list
+
+
 
 
 # def up_sampling(array, unity_number, max_length):

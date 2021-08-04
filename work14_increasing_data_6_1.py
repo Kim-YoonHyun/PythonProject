@@ -18,7 +18,8 @@
 # _6
 # Functions 을 직접 불러오는 방식으로 다시 되돌림
 # 코드 리뉴얼
-
+# _6_1 
+# class 사용해서 코드 간소화
 
 import numpy as np
 import os
@@ -45,7 +46,7 @@ up_num_of_bone2_points = 1500  # 증가시킬 Bone2 의 point 갯수
 num_of_rand_sam = 3
 
 # B. Augmentation: translate
-num_of_trans_increasing = 2  # translate 를 통해 증가시킬 배수
+num_of_trans_increasing = 0  # translate 를 통해 증가시킬 배수
 trans_x = [-3.0, 3.0]  # x 축에 대한 최대 translate 범위
 trans_y = [-3.0, 3.0]  # y 축에 대한 최대 translate 범위
 trans_z = [-3.0, 3.0]  # z 축에 대한 최대 translate 범위
@@ -95,16 +96,16 @@ for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
                 print(f'target', target_vertex_array.shape)
 
             # 그외 skin, bone 데이터의 경우
-            elif stl_name.split('_')[0][0] == 'L' and bone_flag == 1:
+            elif stl_name[0] == 'L' and bone_flag == 1:
                 bone_flag += 1
                 up_sampled_bone1_vertices_list = functions_my.up_sampling(stl_vertices_list, up_num_of_bone1_points - num_of_stl_points)
                 up_all_bone1_vertices_list.append(up_sampled_bone1_vertices_list)
                 print(np.array(up_sampled_bone1_vertices_list).shape)
-            elif stl_name.split('_')[0][0] == 'L' and bone_flag == 2:
+            elif stl_name[0] == 'L' and bone_flag == 2:
                 up_sampled_bone2_vertices_list = functions_my.up_sampling(stl_vertices_list, up_num_of_bone2_points - num_of_stl_points)
                 up_all_bone2_vertices_list.append(up_sampled_bone2_vertices_list)
                 print(np.array(up_sampled_bone2_vertices_list).shape)
-            elif stl_name.split('_')[0][0] == 'S':
+            elif stl_name[0] == 'S':
                 up_sampled_skin_vertices_list = functions_my.up_sampling(stl_vertices_list, up_num_of_skin_points - num_of_stl_points)
                 up_all_skin_vertices_list.append(up_sampled_skin_vertices_list)
                 print(np.array(up_sampled_skin_vertices_list).shape)
@@ -137,38 +138,86 @@ print(np.array(ran_up_all_bone1_vertices_list).shape, end=' ')
 print(np.array(ran_up_all_bone2_vertices_list).shape, end=' ')
 print(np.array(ran_up_all_skin_vertices_list).shape, '\n')
 
+
+class Data_information:
+    def __init__(self, data_name, data_vertices_list):
+        self.data_name = data_name
+        self.data_vertices_list = data_vertices_list
+
+    def translate(self, xyz_offset):
+        temp_list = [
+            np.add(np.array(self.data_vertices_list[i]), xyz_offset[i]).tolist()
+            for i in range(len(xyz_offset))
+        ]
+        self.data_vertices_list = np.concatenate((temp_list), axis=0).tolist()
+
+    def __str__(self):
+        return f'{np.array(self.data_vertices_list).shape}'
+
+target_data = Data_information('target', ran_all_target_vertex_list)
+bone1_data = Data_information('bone1', ran_up_all_bone1_vertices_list)
+bone2_data = Data_information('bone2', ran_up_all_bone2_vertices_list)
+skin_data = Data_information('skin', ran_up_all_skin_vertices_list)
+
 ### translate
-if num_of_trans_increasing > 0:
-    temp_target_list, temp_bone1_list, temp_bone2_list, temp_skin_list = [], [], [], []
-    for i in range(len(ran_up_all_bone1_vertices_list)):
+if num_of_trans_increasing > 1:
+    xyz_offset = [
+        [
+            [round(random.uniform(trans_x[0], trans_x[1]), 5),
+             round(random.uniform(trans_y[0], trans_y[1]), 5),
+             round(random.uniform(trans_z[0], trans_z[1]), 5)] for _ in range(num_of_trans_increasing)
+        ] for i in range(len(ran_all_target_vertex_list))
+    ]
+    xyz_offset = np.expand_dims(np.array(xyz_offset), axis=2)
 
-        xyz_offset = [[round(random.uniform(trans_x[0], trans_x[1]), 5),
-                       round(random.uniform(trans_y[0], trans_y[1]), 5),
-                       round(random.uniform(trans_z[0], trans_z[1]), 5)]
-                      for _ in range(num_of_trans_increasing)]
-        xyz_offset = np.expand_dims(np.array(xyz_offset), axis=1)
-        print(xyz_offset.shape)
-        temp_target_list.append(np.add(np.array(ran_all_target_vertex_list)[i], xyz_offset))
-        temp_bone1_list.append(np.add(np.array(ran_up_all_bone1_vertices_list[i]), xyz_offset))
-        temp_bone2_list.append(np.add(np.array(ran_up_all_bone2_vertices_list[i]), xyz_offset))
-        temp_skin_list.append(np.add(np.array(ran_up_all_skin_vertices_list[i]), xyz_offset))
-    trans_ran_all_target_vertex_list = np.concatenate((temp_target_list), axis=0).tolist()
-    trans_ran_up_all_bone1_vertices_list = list(np.concatenate((temp_bone1_list), axis=0))
-    trans_ran_up_all_bone2_vertices_list = list(np.concatenate((temp_bone2_list), axis=0))
-    trans_ran_up_all_skin_vertices_list = list(np.concatenate((temp_skin_list), axis=0))
+    target_data.translate(xyz_offset)
+    bone1_data.translate(xyz_offset)
+    bone2_data.translate(xyz_offset)
+    skin_data.translate(xyz_offset)
+
     print(f'translate X {num_of_trans_increasing}')
+    print(np.array(target_data.data_vertices_list).shape, end=' ')
+    print(np.array(bone1_data.data_vertices_list).shape, end=' ')
+    print(np.array(bone2_data.data_vertices_list).shape, end=' ')
+    print(np.array(skin_data.data_vertices_list).shape, '\n')
 else:
-    trans_ran_all_target_vertex_list = ran_all_target_vertex_list
-    trans_ran_up_all_bone1_vertices_list = ran_up_all_bone1_vertices_list
-    trans_ran_up_all_bone2_vertices_list = ran_up_all_bone2_vertices_list
-    trans_ran_up_all_skin_vertices_list = ran_up_all_skin_vertices_list
     print(f'not translate')
-
-print(np.array(trans_ran_all_target_vertex_list).shape, end=' ')
-print(np.array(trans_ran_all_target_vertex_list), end=' ')
-print(np.array(trans_ran_up_all_bone1_vertices_list).shape, end=' ')
-print(np.array(trans_ran_up_all_bone2_vertices_list).shape, end=' ')
-print(np.array(trans_ran_up_all_skin_vertices_list).shape, '\n')
+    # print(target_data, end=' ')
+    # print(bone1_data, end=' ')
+    # print(bone2_data, end=' ')
+    # print(skin_data, '\n')
+# >>>> trans 까지 class 적용 완료
+exit()
+#     temp_target_list, temp_bone1_list, temp_bone2_list, temp_skin_list = [], [], [], []
+#     for i in range(len(ran_up_all_bone1_vertices_list)):
+#
+#         xyz_offset = [[round(random.uniform(trans_x[0], trans_x[1]), 5),
+#                        round(random.uniform(trans_y[0], trans_y[1]), 5),
+#                        round(random.uniform(trans_z[0], trans_z[1]), 5)]
+#                       for _ in range(num_of_trans_increasing)]
+#         xyz_offset = np.expand_dims(np.array(xyz_offset), axis=1)
+#
+#         temp_target_list.append(np.add(np.array(ran_all_target_vertex_list)[i], xyz_offset))
+#         temp_bone1_list.append(np.add(np.array(ran_up_all_bone1_vertices_list[i]), xyz_offset))
+#         temp_bone2_list.append(np.add(np.array(ran_up_all_bone2_vertices_list[i]), xyz_offset))
+#         temp_skin_list.append(np.add(np.array(ran_up_all_skin_vertices_list[i]), xyz_offset))
+#     trans_ran_all_target_vertex_list = np.concatenate((temp_target_list), axis=0).tolist()
+#     trans_ran_up_all_bone1_vertices_list = list(np.concatenate((temp_bone1_list), axis=0))
+#     trans_ran_up_all_bone2_vertices_list = list(np.concatenate((temp_bone2_list), axis=0))
+#     trans_ran_up_all_skin_vertices_list = list(np.concatenate((temp_skin_list), axis=0))
+#     print(f'translate X {num_of_trans_increasing}')
+# else:
+#     trans_ran_all_target_vertex_list = ran_all_target_vertex_list
+#     trans_ran_up_all_bone1_vertices_list = ran_up_all_bone1_vertices_list
+#     trans_ran_up_all_bone2_vertices_list = ran_up_all_bone2_vertices_list
+#     trans_ran_up_all_skin_vertices_list = ran_up_all_skin_vertices_list
+#     print(f'not translate')
+#
+# print(np.array(trans_ran_all_target_vertex_list).shape, end=' ')
+# print(np.array(trans_ran_all_target_vertex_list), end=' ')
+# print(np.array(trans_ran_up_all_bone1_vertices_list).shape, end=' ')
+# print(np.array(trans_ran_up_all_bone2_vertices_list).shape, end=' ')
+# print(np.array(trans_ran_up_all_skin_vertices_list).shape, '\n')
 
 
 ### rotation
