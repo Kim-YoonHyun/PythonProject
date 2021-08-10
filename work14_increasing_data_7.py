@@ -114,7 +114,6 @@ class DataInformation:
 
     def random_sampling(self, up_num_of_stl_points, num_of_rand_sam):
         """
-
         :param up_num_of_stl_points:
         :param num_of_rand_sam:
         :return:
@@ -158,6 +157,8 @@ class DataInformation:
         self.trans_status = f'trans X {num_of_trans}'
         print()
 
+    def rotation(self):
+        a = 1
 target_data = DataInformation('target')
 bone1_data = DataInformation('bone1')
 bone2_data = DataInformation('bone2')
@@ -293,10 +294,13 @@ def make_rotate_angle(number, x1, x2, y1, y2, z1, z2):
     x_degree = random.uniform(x1, x2) * (math.pi / 180)
     y_degree = random.uniform(y1, y2) * (math.pi / 180)
     z_degree = random.uniform(z1, z2) * (math.pi / 180)
-    return x_degree, y_degree, z_degree
+    return np.array([x_degree, y_degree, z_degree])
 
-xd, yd, zd = make_rotate_angle(num_of_rot, rot_x[0], rot_x[1], rot_y[0], rot_y[1], rot_z[0], rot_z[1])
 
+xyz_angle = make_rotate_angle(num_of_rot, rot_x[0], rot_x[1], rot_y[0], rot_y[1], rot_z[0], rot_z[1])
+print(xyz_angle.shape)
+print(xyz_angle)
+exit()
 print(xd*180/math.pi)
 print(yd*180/math.pi)
 print(zd*180/math.pi)
@@ -315,7 +319,9 @@ def make_rotation_matrix(xyz_angle):
         [math.sin(xyz_angle[2]),  math.cos(xyz_angle[2]),   0.],
         [0.,                       0.,                      1.]]), axis=0)
     return np.concatenate((x_matrix, y_matrix, z_matrix), axis=0)
-
+a = make_rotation_matrix()
+print()
+exit()
 temp_list = []
 temp_list.append(make_rotation_matrix('x', xd))
 temp_list.append(make_rotation_matrix('y', yd))
