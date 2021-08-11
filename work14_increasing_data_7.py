@@ -149,21 +149,60 @@ class DataInformation:
                 np.add(np.array(self.data_vertices_list[data_index]), xyz_offset[i]).tolist()
                 for i in range(len(xyz_offset))
             ]
-
-        self.data_vertices_list = np.concatenate(temp_list, axis=0).tolist()
-        print(f'{np.array(self.data_vertices_list).shape}')
         self.num_of_data *= num_of_trans
-        self.num_of_data_points = np.array(self.data_vertices_list).shape[1]
+        self.data_vertices_list = np.concatenate(temp_list, axis=0).tolist()
         self.trans_status = f'trans X {num_of_trans}'
+        print(f'{np.array(self.data_vertices_list).shape}')
         print()
 
-    def rotation(self):
-        a = 1
+    def rotation(self, num_of_rot, rot_x, rot_y, rot_z):
+        print(f'<{self.data_name}>')
+        print(f'data: {np.array(self.data_vertices_list).shape} --->', end=' ')
+
+        result_vertices = []
+        for i in range(num_of_rot):
+            # rotation angle
+            x_degree = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
+            y_degree = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
+            z_degree = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
+            xyz_angle = np.array([x_degree, y_degree, z_degree])
+
+            # rotation matrix
+            x_matrix = np.expand_dims(np.array([
+                [1.,                     0.,                      0.],
+                [0., math.cos(xyz_angle[0]), -math.sin(xyz_angle[0])],
+                [0., math.sin(xyz_angle[0]), math.cos(xyz_angle[0])]]), axis=0)
+            y_matrix = np.expand_dims(np.array([
+                [ math.cos(xyz_angle[1]), 0., math.sin(xyz_angle[1])],
+                [                     0., 1.,                     0.],
+                [-math.sin(xyz_angle[1]), 0., math.cos(xyz_angle[1])]]), axis=0)
+            z_matrix = np.expand_dims(np.array([
+                [math.cos(xyz_angle[2]), -math.sin(xyz_angle[2]), 0.],
+                [math.sin(xyz_angle[2]),  math.cos(xyz_angle[2]), 0.],
+                [                    0.,                      0., 1.]]), axis=0)
+            xyz_rot_matrix = np.concatenate((x_matrix, y_matrix, z_matrix), axis=0)
+
+            # rotation process
+            center_vertex = np.average(np.array(self.data_vertices_list), axis=0)
+            trans_to_zero_coordinate = np.subtract(np.array(self.data_vertices_list), center_vertex)
+            rot_vertices = np.dot(trans_to_zero_coordinate, xyz_rot_matrix[0])
+            rot_vertices = np.dot(rot_vertices, xyz_rot_matrix[1])
+            rot_vertices = np.dot(rot_vertices, xyz_rot_matrix[2])
+            trans_to_origin_coordinate = np.add(rot_vertices, center_vertex).tolist()
+
+            result_vertices.append(trans_to_origin_coordinate)
+        self.num_of_data *= num_of_rot
+        self.data_vertices_list = np.concatenate((result_vertices), axis=0).tolist()
+        self.rot_status = f'rot X {num_of_rot}'
+        print(f'{np.array(self.data_vertices_list).shape}')
+        print()
+
 target_data = DataInformation('target')
 bone1_data = DataInformation('bone1')
 bone2_data = DataInformation('bone2')
 skin_data = DataInformation('skin')
 
+# <초기 데이터 불러오기> ----------------------------------------------
 for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
     file_list = os.listdir(f'{stl_set_path}/set{stl_set_num}')
     bone_flag = 1
@@ -246,7 +285,13 @@ if num_of_trans > 1:
 else:
     print(f'not translate')
 
+
 # < rotation > ------------------------------------------------
+print('rotation...')
+target_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
+bone1_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
+bone2_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
+skin_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
 
 print(target_data, '\n')
 print(bone1_data, '\n')
@@ -257,239 +302,8 @@ input_data = [target_data, bone1_data, bone2_data, skin_data]
 with open('input_data.pkl', 'wb') as file:
     dill.dump(input_data, file)
 
-#     temp_target_list, temp_bone1_list, temp_bone2_list, temp_skin_list = [], [], [], []
-#     for i in range(len(ran_up_all_bone1_vertices_list)):
-#
-#         xyz_offset = [[round(random.uniform(trans_x[0], trans_x[1]), 5),
-#                        round(random.uniform(trans_y[0], trans_y[1]), 5),
-#                        round(random.uniform(trans_z[0], trans_z[1]), 5)]
-#                       for _ in range(num_of_trans_increasing)]
-#         xyz_offset = np.expand_dims(np.array(xyz_offset), axis=1)
-#
-#         temp_target_list.append(np.add(np.array(ran_all_target_vertex_list)[i], xyz_offset))
-#         temp_bone1_list.append(np.add(np.array(ran_up_all_bone1_vertices_list[i]), xyz_offset))
-#         temp_bone2_list.append(np.add(np.array(ran_up_all_bone2_vertices_list[i]), xyz_offset))
-#         temp_skin_list.append(np.add(np.array(ran_up_all_skin_vertices_list[i]), xyz_offset))
-#     trans_ran_all_target_vertex_list = np.concatenate((temp_target_list), axis=0).tolist()
-#     trans_ran_up_all_bone1_vertices_list = list(np.concatenate((temp_bone1_list), axis=0))
-#     trans_ran_up_all_bone2_vertices_list = list(np.concatenate((temp_bone2_list), axis=0))
-#     trans_ran_up_all_skin_vertices_list = list(np.concatenate((temp_skin_list), axis=0))
-#     print(f'translate X {num_of_trans_increasing}')
-# else:
-#     trans_ran_all_target_vertex_list = ran_all_target_vertex_list
-#     trans_ran_up_all_bone1_vertices_list = ran_up_all_bone1_vertices_list
-#     trans_ran_up_all_bone2_vertices_list = ran_up_all_bone2_vertices_list
-#     trans_ran_up_all_skin_vertices_list = ran_up_all_skin_vertices_list
-#     print(f'not translate')
-#
-# print(np.array(trans_ran_all_target_vertex_list).shape, end=' ')
-# print(np.array(trans_ran_all_target_vertex_list), end=' ')
-# print(np.array(trans_ran_up_all_bone1_vertices_list).shape, end=' ')
-# print(np.array(trans_ran_up_all_bone2_vertices_list).shape, end=' ')
-# print(np.array(trans_ran_up_all_skin_vertices_list).shape, '\n')
-
-
-### rotation
-def make_rotate_angle(number, x1, x2, y1, y2, z1, z2):
-    x_degree = random.uniform(x1, x2) * (math.pi / 180)
-    y_degree = random.uniform(y1, y2) * (math.pi / 180)
-    z_degree = random.uniform(z1, z2) * (math.pi / 180)
-    return np.array([x_degree, y_degree, z_degree])
-
-
-xyz_angle = make_rotate_angle(num_of_rot, rot_x[0], rot_x[1], rot_y[0], rot_y[1], rot_z[0], rot_z[1])
-print(xyz_angle.shape)
-print(xyz_angle)
-exit()
-print(xd*180/math.pi)
-print(yd*180/math.pi)
-print(zd*180/math.pi)
-## >>> rotation 진행중
-def make_rotation_matrix(xyz_angle):
-    x_matrix = np.expand_dims(np.array([
-        [1.,                       0.,                      0.],
-        [0.,   math.cos(xyz_angle[0]), -math.sin(xyz_angle[0])],
-        [0.,   math.sin(xyz_angle[0]),  math.cos(xyz_angle[0])]]), axis=0)
-    y_matrix = np.expand_dims(np.array([
-        [math.cos(xyz_angle[1]),   0.,  math.sin(xyz_angle[1])],
-        [0.,                       1.,                      0.],
-        [-math.sin(xyz_angle[1]),  0.,  math.cos(xyz_angle[1])]]), axis=0)
-    z_matrix = np.expand_dims(np.array([
-        [math.cos(xyz_angle[2]), -math.sin(xyz_angle[2]),   0.],
-        [math.sin(xyz_angle[2]),  math.cos(xyz_angle[2]),   0.],
-        [0.,                       0.,                      1.]]), axis=0)
-    return np.concatenate((x_matrix, y_matrix, z_matrix), axis=0)
-a = make_rotation_matrix()
-print()
-exit()
-temp_list = []
-temp_list.append(make_rotation_matrix('x', xd))
-temp_list.append(make_rotation_matrix('y', yd))
-temp_list.append(make_rotation_matrix('z', zd))
-print(np.array(temp_list))
-print(np.array(temp_list).shape)
-
 exit()
 
-
-
-
-exit()
-def make_all_rotation(number, x1, x2, y1, y2, z1, z2, array, center):
-    answer_list = []
-    x_angle, y_angle, z_angle = make_rotate_angle(number=number, x1=x1, x2=x2, y1=y1, y2=y2, z1=z1, z2=z2)
-    for i in range(number):
-        trans_to_zero = np.add(array, center)
-
-        # x rotation
-        rotation_mat = make_rotation_matrix(axis_select='x', angle=x_angle[i])
-        rotation1 = np.dot(trans_to_zero, rotation_mat)
-
-        # y rotation
-        rotation_mat = make_rotation_matrix(axis_select='y', angle=y_angle[i])
-        rotation2 = np.dot(rotation1, rotation_mat)
-
-        # z rotation
-        rotation_mat = make_rotation_matrix(axis_select='z', angle=z_angle[i])
-        rotation3 = np.dot(rotation2, rotation_mat)
-
-        back_to_origin = np.subtract(rotation3, center)
-
-        answer_list.append(back_to_origin)
-    return np.array(answer_list)
-def make_all_rotation_mk2(number, x_angle, y_angle, z_angle, array):
-    list = []
-    center = -np.average(array, axis=0)
-
-    for i in range(number):
-        trans_to_zero = np.add(array, center)
-
-        # x rotation
-        rotation_mat = Functions.make_rotation_matrix(axis_select= 'x', angle= x_angle[i])
-        rotation1 = np.dot(trans_to_zero, rotation_mat)
-
-        # y rotation
-        rotation_mat = Functions.make_rotation_matrix(axis_select='y', angle=y_angle[i])
-        rotation2 = np.dot(rotation1, rotation_mat)
-
-        # z rotation
-        rotation_mat = Functions.make_rotation_matrix(axis_select='z', angle=z_angle[i])
-        rotation3 = np.dot(rotation2, rotation_mat)
-
-        back_to_origin = np.subtract(rotation3, center)
-        list.append(back_to_origin)
-    return np.array(list)
-
-# # translate
-# if num_of_tar_increasing == 0:
-#     # all_inc_up_Skin_array = all_origin_up_Skin_array
-#     # all_inc_up_Bone1_array = all_origin_up_Bone1_array
-#     # all_inc_up_Bone2_array = all_origin_up_Bone2_array
-#     # all_inc_tar_array = all_origin_tar_array
-#     a = 1
-# else:
-#     for i in range(len(set)):
-#         # x_offset, y_offset, z_offset = Functions.make_offset_distance(trans_increasing_number, trans_x[0], trans_x[1],
-#         #                                                               trans_y[0], trans_y[1], trans_z[0], trans_z[1])
-#
-#         # Skin
-#         Skin_temp = Functions.make_all_offset(all_origin_up_Skin_array[i], x_offset, y_offset, z_offset,
-#                                               trans_increasing_number)
-#         Skin_dummy_array = np.concatenate((Skin_dummy_array, Skin_temp), axis=0)
-#
-#         # # Bone1
-#         Bone1_temp = Functions.make_all_offset(all_origin_up_Bone1_array[i], x_offset, y_offset, z_offset,
-#                                                trans_increasing_number)
-#         Bone1_dummy_array = np.concatenate((Bone1_dummy_array, Bone1_temp), axis=0)
-#
-#         # Bone2
-#         Bone2_temp = Functions.make_all_offset(all_origin_up_Bone2_array[i], x_offset, y_offset, z_offset,
-#                                                trans_increasing_number)
-#         Bone2_dummy_array = np.concatenate((Bone2_dummy_array, Bone2_temp), axis=0)
-#
-#         # tar
-#         tar_temp = Functions.make_all_offset(all_origin_tar_array[i], x_offset, y_offset, z_offset,
-#                                              trans_increasing_number)
-#         tar_dummy_array = np.concatenate((tar_dummy_array, tar_temp), axis=0)
-#
-#         # dummy array 제거
-#         all_inc_up_Skin_array = Skin_dummy_array[1:, :, :]
-#         all_inc_up_Bone1_array = Bone1_dummy_array[1:, :, :]
-#         all_inc_up_Bone2_array = Bone2_dummy_array[1:, :, :]
-#         all_inc_tar_array = tar_dummy_array[1:, :, :]
-#
-# # =======================================================
-# # random sampling
-# Skin_rand_sam_num = int(skin_points/rand_sam_num)
-# Bone1_rand_sam_num = int(Bone1_points/rand_sam_num)
-# Bone2_rand_sam_num = int(Bone2_points/rand_sam_num)
-# Skin_dummy_arrays = np.zeros([1, Skin_rand_sam_num, 3])
-# Bone1_dummy_arrays = np.zeros([1, Bone1_rand_sam_num, 3])
-# Bone2_dummy_arrays = np.zeros([1, Bone2_rand_sam_num, 3])
-#
-#
-# all_inc_up_rand_Skin_array, _ = Functions.random_sampling(all_inc_up_Skin_array, Skin_dummy_arrays, Skin_rand_sam_num)
-# all_inc_up_rand_Bone1_array, Bone1_tile = Functions.random_sampling(all_inc_up_Bone1_array, Bone1_dummy_arrays,
-#                                                                     Bone1_rand_sam_num)
-# all_inc_up_rand_Bone2_array, _ = Functions.random_sampling(all_inc_up_Bone2_array, Bone2_dummy_arrays,
-#                                                            Bone2_rand_sam_num)
-# all_inc_rand_tar_arrays = np.zeros([1, 1, 3])
-#
-# for i in range(all_inc_tar_array.shape[0]):
-#     temp = np.tile(all_inc_tar_array[i], [Bone1_tile[i], 1, 1])
-#     all_inc_rand_tar_arrays = np.concatenate((all_inc_rand_tar_arrays, temp), axis=0)
-# all_inc_rand_tar_arrays = np.delete(all_inc_rand_tar_arrays, 0, axis=0)
-
-# =======================================================
-# rotation
-# Skin
-Skin_dummy_array = np.zeros([1, int(skin_points/rand_sam_num), 3])
-
-if rot_increasing_number == 0:
-    all_inc_up_rand_Skin_array = all_inc_up_rand_Skin_array
-else:
-    for i in range(all_inc_up_rand_Skin_array.shape[0]):
-        x_angle, y_angle, z_angle = Functions.make_rotate_angle(rot_increasing_number,
-                                                                rot_x[0], rot_x[1],
-                                                                rot_y[0], rot_y[1],
-                                                                rot_z[0], rot_z[1])
-        Skin_temp = Functions_mk2.make_all_rotation_mk2(rot_increasing_number, x_angle, y_angle, z_angle,
-                                                        all_inc_up_rand_Skin_array[i])
-        Skin_dummy_array = np.concatenate((Skin_dummy_array, Skin_temp), axis=0)
-    all_inc_up_rand_Skin_array = Skin_dummy_array[1:, :, :]
-
-# Bone1 & 2
-Bone1_dummy_array = np.zeros([1, int(Bone1_points/rand_sam_num), 3])
-Bone2_dummy_array = np.zeros([1, int(Bone2_points/rand_sam_num), 3])
-
-if rot_increasing_number == 0:
-    all_inc_up_rand_Bone1_array = all_inc_up_rand_Bone1_array
-    all_inc_up_rand_Bone2_array = all_inc_up_rand_Bone2_array
-else:
-    for i in range(all_inc_up_rand_Bone1_array.shape[0]):
-        x_angle, y_angle, z_angle = Functions.make_rotate_angle(rot_increasing_number,
-                                                                -10.0, 10.0,
-                                                                -10.0, 10.0,
-                                                                -10.0, 10.0)
-        Bone1_temp = Functions_mk2.make_all_rotation_mk2(rot_increasing_number, x_angle, y_angle, z_angle,
-                                                         all_inc_up_rand_Bone1_array[i])
-        Bone2_temp = Functions_mk2.make_all_rotation_mk2(rot_increasing_number, x_angle, y_angle, z_angle,
-                                                         all_inc_up_rand_Bone2_array[i])
-        Bone1_dummy_array = np.concatenate((Bone1_dummy_array, Bone1_temp), axis=0)
-        Bone2_dummy_array = np.concatenate((Bone2_dummy_array, Bone2_temp), axis=0)
-    all_inc_up_rand_Bone1_array = Bone1_dummy_array[1:, :, :]
-    all_inc_up_rand_Bone2_array = Bone2_dummy_array[1:, :, :]
-
-# tar
-tar_dummy_array = np.zeros([1, 1, 3])
-
-if rot_increasing_number == 0:
-    all_inc_rand_tar_arrays = all_inc_rand_tar_arrays
-else:
-    for i in range(all_inc_rand_tar_arrays.shape[0]):
-        temp = np.tile(all_inc_rand_tar_arrays[i], [rot_increasing_number, 1, 1])
-        tar_dummy_array = np.concatenate((tar_dummy_array, temp), axis=0)
-    all_inc_rand_tar_arrays = np.delete(tar_dummy_array, 0, axis=0)
 
 case = np.concatenate((all_inc_up_rand_Skin_array, all_inc_up_rand_Bone1_array), axis=1)
 case = np.concatenate((case, all_inc_up_rand_Bone2_array), axis=1)
