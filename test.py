@@ -5,48 +5,58 @@ import random
 import time
 import dill
 import math
-#
-# with open('input_data.pkl', 'rb') as f:
-#     input_data = dill.load(f)
-# print(input_data)
+import pandas as pd
+
+s = pd.Series([100, 200, 300], index=['인덱스0', '인덱스1', '인덱스2'], dtype=np.int32)
+# print(s.index.values)
+# print(s[0])
+# print(s['인덱스0'])
+# print(s.인덱스0)
+# print(s[[0, 2]])
+# print(s[['인덱스0', '인덱스2']])
+# print(s[1:2])
+# print(s['인덱스1':'인덱스2'])
+s['인덱스3'] = 400
+# s.인덱스4 = 400
+# print(s)
+# print(s.notnull())
+
+data = {
+    "열0": ['aa', 'bb', 'cc'],
+    "열1": [100, 200, 300],
+    "열2": [400, 500, 600],
+    "열3": [700, 800, 900],
+    "열4": [1000, 1100, 1200],
+    "열5": [0.01, 0.02, 0.03]
+}
+columns = ["열0", "열1", "열2", "열3", "열4", "열5"]
+index = ["인덱스0", "인덱스1", "인덱스2"]
+
+df = pd.DataFrame(data, index=index, columns=columns)
 
 
-def make_rotate_angle(number, x1, x2, y1, y2, z1, z2):
-    x_degree = random.uniform(x1, x2) * (math.pi / 180)
-    y_degree = random.uniform(y1, y2) * (math.pi / 180)
-    z_degree = random.uniform(z1, z2) * (math.pi / 180)
-    return x_degree, y_degree, z_degree
+# print(df)
+# print(df.열0[0])
+# print(df.열0['인덱스0'])
+# print(df.열0.인덱스0)
+# print(df.열0.values)
+# print(df.columns.values)
+df['열6'] = [1, 2, 3]
+# print(df)
+# print(df[[13]])
+df.to_csv('sample.csv')
+# df2 = pd.read_csv('sample.csv', names=['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'])
+df2 = pd.read_csv('sample.csv', header=None)
 
+data = [
+    ['aa', 'bb', 'cc'],
+    [100, 200, 300],
+    [400, 500, 600]
+]
+index = ["인덱스0", "인덱스1", "인덱스2"]
 
-xd, yd, zd = make_rotate_angle(2, -10, 10, -10, 10, -5, 5)
-
-print(xd*180/math.pi)
-print(yd*180/math.pi)
-print(zd*180/math.pi)
-
-
-def make_rotation_matrix(xyz_angle):
-    x_matrix = np.expand_dims(np.array([
-        [1.,                       0.,                      0.],
-        [0.,   math.cos(xyz_angle[0]), -math.sin(xyz_angle[0])],
-        [0.,   math.sin(xyz_angle[0]),  math.cos(xyz_angle[0])]]), axis=0)
-    y_matrix = np.expand_dims(np.array([
-        [math.cos(xyz_angle[1]),   0.,  math.sin(xyz_angle[1])],
-        [0.,                       1.,                      0.],
-        [-math.sin(xyz_angle[1]),  0.,  math.cos(xyz_angle[1])]]), axis=0)
-    z_matrix = np.expand_dims(np.array([
-        [math.cos(xyz_angle[2]), -math.sin(xyz_angle[2]),   0.],
-        [math.sin(xyz_angle[2]),  math.cos(xyz_angle[2]),   0.],
-        [0.,                       0.,                      1.]]), axis=0)
-    return np.concatenate((x_matrix, y_matrix, z_matrix), axis=0)
-
-
-x = make_rotation_matrix([xd, yd, zd])
-b = np.random.randint(-6, 6, 36).reshape(6, 2, 3)
-
-print(np.dot(b, x[0]))
-print(np.dot(b[0,0], x[0]))
-print(np.dot(b[0,1], x[0]))
-print(np.dot(b[1,0], x[0]))
-print(np.dot(b[1,1], x[0]))
-print(np.dot(b[0,0], x[0]))
+df3 = pd.DataFrame(data, index=index)
+# print(df3)
+# print(df3[[0]])
+# print(df.loc[['인덱스1']:['인덱스2']])
+print(df[])
