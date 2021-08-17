@@ -26,6 +26,10 @@
 # up, random sampling 및 translate, rotation 적용 여부 및 각 데이터 정보를 전부 class 에 저장
 # dill 추가 (class 인스턴스 객체 저장용)
 
+# _8
+# rotation 완료
+# pandas를 통해 data 저장
+
 import numpy as np
 import os
 import functions_my
@@ -34,6 +38,7 @@ import random
 import math
 import vtk
 import dill  # _7
+import pandas as pd # _8
 
 # #### basic parameter
 # A. stl 파일 불러오기. 현재 사용 중인 set 은 32번 부터이다.
@@ -155,39 +160,25 @@ class DataInformation:
         print(f'{np.array(self.data_vertices_list).shape}')
         print()
 
-    def rotation(self, num_of_rot, xyz_angle):
+    def rotation(self, xyz_rot_matrices):
         print(f'<{self.data_name}>')
         print(f'data: {np.array(self.data_vertices_list).shape} --->', end=' ')
 
-        result_vertices = []
+        center_vertex = np.average(np.array(self.data_vertices_list), axis=1)
+        temp_list = []
         for i in range(self.num_of_data):
-            # rotation matrix
-            x_matrix = np.expand_dims(np.array([
-                [1.,                        0.,                         0.],
-                [0., math.cos(xyz_angle[i][0]), -math.sin(xyz_angle[i][0])],
-                [0., math.sin(xyz_angle[i][0]), math.cos(xyz_angle[i][0])]]), axis=0)
-            y_matrix = np.expand_dims(np.array([
-                [ math.cos(xyz_angle[i][1]), 0., math.sin(xyz_angle[i][1])],
-                [                        0., 1.,                        0.],
-                [-math.sin(xyz_angle[i][1]), 0., math.cos(xyz_angle[i][1])]]), axis=0)
-            z_matrix = np.expand_dims(np.array([
-                [math.cos(xyz_angle[i][2]), -math.sin(xyz_angle[i][2]), 0.],
-                [math.sin(xyz_angle[i][2]),  math.cos(xyz_angle[i][2]), 0.],
-                [                       0.,                         0., 1.]]), axis=0)
-            xyz_rot_matrix = np.concatenate((x_matrix, y_matrix, z_matrix), axis=0)
+            trans_to_zero_coordinate = np.subtract(np.array(self.data_vertices_list), center_vertex[i])
+            rot_vertices = np.dot(trans_to_zero_coordinate[i], xyz_rot_matrices[i])
+            rot_vertices_expanded = np.expand_dims(rot_vertices, axis=-2)
+            result_vertices_zero = np.concatenate((rot_vertices_expanded), axis=1)
+            trans_to_origin_coordinate = np.add(result_vertices_zero, center_vertex[i])
+            temp_list.append(trans_to_origin_coordinate)
+        all_result_vertices = np.concatenate((temp_list), axis=0)
 
-            # rotation process
-            center_vertex = np.average(np.array(self.data_vertices_list), axis=0)
-            trans_to_zero_coordinate = np.subtract(np.array(self.data_vertices_list), center_vertex)
-            rot_vertices = np.dot(trans_to_zero_coordinate, xyz_rot_matrix[0])
-            rot_vertices = np.dot(rot_vertices, xyz_rot_matrix[1])
-            rot_vertices = np.dot(rot_vertices, xyz_rot_matrix[2])
-            trans_to_origin_coordinate = np.add(rot_vertices, center_vertex).tolist()
-
-            result_vertices.append(trans_to_origin_coordinate)
         self.num_of_data *= num_of_rot
-        self.data_vertices_list = np.concatenate((result_vertices), axis=0).tolist()
+        self.data_vertices_list = all_result_vertices.tolist()
         self.rot_status = f'rot X {num_of_rot}'
+
         print(f'{np.array(self.data_vertices_list).shape}')
         print()
 
@@ -281,98 +272,139 @@ else:
 
 
 # < rotation > ------------------------------------------------
-# rotation angle
-xyz_angle = [
-    [
-        [
-        random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180),
-        random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180),
-        random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
-        ] for _ in range(num_of_rot)
-    ] for _ in range(target_data.num_of_data)
-]
-# x_degree = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
-# y_degree = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
-# z_degree = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
-print(np.array(xyz_angle))
-print(np.array(xyz_angle).shape)
-
-exit()
-
 print('rotation...')
-target_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
-bone1_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
-bone2_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
-skin_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
 
-print(target_data, '\n')
-print(bone1_data, '\n')
-print(bone2_data, '\n')
-print(skin_data, '\n')
+# rotation matrix
+all_rot_matrices = []
+for j in range(target_data.num_of_data):
+    xyz_rot_matrix = []
+    for i in range(num_of_rot):
+        x_angle = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
+        y_angle = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
+        z_angle = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
 
-input_data = [target_data, bone1_data, bone2_data, skin_data]
-with open('input_data.pkl', 'wb') as file:
-    dill.dump(input_data, file)
+        x_matrix = np.array([
+                        [1.,                        0.,                         0.],
+                        [0., math.cos(x_angle), -math.sin(x_angle)],
+                        [0., math.sin(x_angle), math.cos(x_angle)]])
+        y_matrix = np.array([
+                        [ math.cos(y_angle), 0., math.sin(y_angle)],
+                        [                        0., 1.,                        0.],
+                        [-math.sin(y_angle), 0., math.cos(y_angle)]])
+        z_matrix = np.array([
+                        [math.cos(z_angle), -math.sin(z_angle), 0.],
+                        [math.sin(z_angle),  math.cos(z_angle), 0.],
+                        [                       0.,                         0., 1.]])
+        xy_matrix = np.dot(x_matrix, y_matrix)
+        xyz_matrix = np.dot(xy_matrix, z_matrix)
+        xyz_rot_matrix.append(xyz_matrix)
+    all_rot_matrices.append(xyz_rot_matrix)
 
-exit()
+target_data.rotation(all_rot_matrices)
+bone1_data.rotation(all_rot_matrices)
+bone2_data.rotation(all_rot_matrices)
+skin_data.rotation(all_rot_matrices)
+
+# print(target_data, '\n')
+# print(bone1_data, '\n')
+# print(bone2_data, '\n')
+# print(skin_data, '\n')
 
 
-case = np.concatenate((all_inc_up_rand_Skin_array, all_inc_up_rand_Bone1_array), axis=1)
-case = np.concatenate((case, all_inc_up_rand_Bone2_array), axis=1)
-case = np.concatenate((case, all_inc_rand_tar_arrays), axis=1)
+all_data = [target_data, bone1_data, bone2_data, skin_data]
 
-all_points = int((skin_points + Bone1_points + Bone2_points) / rand_sam_num)
+num_of_data_list,  num_of_data_point_list, array_size_list, data_name_list = [], [], [], []
+up_sam_status_list, rand_sam_status_list, trans_status_list, rot_status_list = [], [], [], []
+all_data_vertices_list = []
 
-all_case = np.zeros([1, all_points + 1, 3])
+for data in all_data:
+    num_of_data_list.append(data.num_of_data)
+    num_of_data_point_list.append(data.num_of_data_points)
+    array_size_list.append(np.array(data.data_vertices_list).shape)
+    data_name_list.append(data.data_name)
+    up_sam_status_list.append(data.up_sam_status)
+    rand_sam_status_list.append(data.rand_sam_status)
+    trans_status_list.append(data.trans_status)
+    rot_status_list.append(data.rot_status)
+    all_data_vertices_list.append(np.array(data.data_vertices_list))
 
-for i in range(case.shape[0]):
-    copy_case = np.copy(case[i][:all_points, :])
-    x_offset, y_offset, z_offset = Functions.make_offset_distance(tar_increasing_number - 1, tar_x[0], tar_x[1],
-                                                                  tar_y[0], tar_y[1], tar_z[0], tar_z[1])
-    all_Target = Functions.make_all_offset(case[i][all_points], x_offset, y_offset, z_offset, tar_increasing_number - 1)
-    copy_lists = []
-    for j in range(tar_increasing_number - 1):
-        temp_case = np.concatenate((copy_case, np.expand_dims(all_Target[j], axis=0)), axis=0)
-        copy_lists.append(temp_case)
+df = pd.DataFrame({
+    '데이터 갯수': num_of_data_list, '포인트 갯수': num_of_data_point_list, 'shape': array_size_list,
+    'up sam 상태': up_sam_status_list, 'rand sam 상태': rand_sam_status_list, 'trans 상태': trans_status_list,
+    'rot 상태': rot_status_list
+}, index=data_name_list)
+df.index.name = '이름'
+print(df)
 
-    copy_arrays = np.array(copy_lists)
-    rand_tar_case = np.concatenate((np.expand_dims(case[i], axis=0), copy_arrays), axis=0)
-    all_case = np.concatenate((all_case, rand_tar_case), axis=0)
-case = all_case[1:case.shape[0] * tar_increasing_number + 1, :, :]
-print(case.shape)
+input_data = np.concatenate((all_data_vertices_list), axis=1)
+print(f'input data size: {input_data.shape}')
 
-# if rand_sam_num == 1:
-#     case = np.concatenate((origin_case, case), axis=0)
-print(case.shape)
 
+
+# case = np.concatenate((all_inc_up_rand_Skin_array, all_inc_up_rand_Bone1_array), axis=1)
+# case = np.concatenate((case, all_inc_up_rand_Bone2_array), axis=1)
+# case = np.concatenate((case, all_inc_rand_tar_arrays), axis=1)
+#
+# all_points = int((skin_points + Bone1_points + Bone2_points) / rand_sam_num)
+#
+# all_case = np.zeros([1, all_points + 1, 3])
+#
+# for i in range(case.shape[0]):
+#     copy_case = np.copy(case[i][:all_points, :])
+#     x_offset, y_offset, z_offset = Functions.make_offset_distance(tar_increasing_number - 1, tar_x[0], tar_x[1],
+#                                                                   tar_y[0], tar_y[1], tar_z[0], tar_z[1])
+#     all_Target = Functions.make_all_offset(case[i][all_points], x_offset, y_offset, z_offset, tar_increasing_number - 1)
+#     copy_lists = []
+#     for j in range(tar_increasing_number - 1):
+#         temp_case = np.concatenate((copy_case, np.expand_dims(all_Target[j], axis=0)), axis=0)
+#         copy_lists.append(temp_case)
+#
+#     copy_arrays = np.array(copy_lists)
+#     rand_tar_case = np.concatenate((np.expand_dims(case[i], axis=0), copy_arrays), axis=0)
+#     all_case = np.concatenate((all_case, rand_tar_case), axis=0)
+# case = all_case[1:case.shape[0] * tar_increasing_number + 1, :, :]
+# print(case.shape)
+#
+# # if rand_sam_num == 1:
+# #     case = np.concatenate((origin_case, case), axis=0)
+# print(case.shape)
+#
 
 # ############################## make data folder ######################################################################
-max_data_num = len(os.walk('./data/').__next__()[1]) + 1
-if not os.path.isdir(f'./data/data{max_data_num}'):  # 해당 경로 내에 폴더가 없으면,
-    os.makedirs(f'./data/data{max_data_num}')  # 그 폴더를 만들기
+num_of_data_file = len(os.walk('./data/').__next__()[1])
+# num_of_data_file = 1
+if not os.path.isdir(f'./data/data{num_of_data_file + 1}'):  # 해당 경로 내에 폴더가 없으면,
+    os.makedirs(f'./data/data{num_of_data_file + 1}')  # 그 폴더를 만들기
 
-
-# ############################## make file #############################################################################
-np.save(f'./data/data{max_data_num}/data', case)
-# np.save(f'./data/data{max_data_num}/number_of_data', case.shape[0])
-np.save(f'./data/data{max_data_num}/num_bone1_points', Bone1_rand_sam_num)
-np.save(f'./data/data{max_data_num}/num_bone2_points', Bone2_rand_sam_num)
-np.save(f'./data/data{max_data_num}/num_skin_points', Skin_rand_sam_num)
-
-file = open(f'./data/data{max_data_num}/information.txt', 'w', encoding='utf8')
-line = f"set range : {first_set_num} ~ {last_set_num}, total {last_set_num - first_set_num + 1} sets\n\n" \
-    f"number of Skin point : {int(skin_points/rand_sam_num)}\n" \
-    f"size of Bone1 : {int(Bone1_points/rand_sam_num)}\n" \
-    f"size of Bone2 : {int(Bone2_points/rand_sam_num)}\n\n" \
-    f"< increasing process >\n" \
-    f"(translate {trans_increasing_number}) X (rotation {rot_increasing_number}) X (up random {rand_sam_num})\n" \
-    f"number of random target : {tar_increasing_number}\n\n" \
-    f"number of data : {case.shape[0]}\n\n"
-file.write(line)
-print('\n\n추가 정보 기입')
-string = str(input())
-file.write(f'추가 정보: {string}')
-
+# 각종 데이터 저장
+with open(f'./data/data{num_of_data_file + 1}/input_data.pkl', 'wb') as file:
+    dill.dump(all_data, file)
+df.to_csv(f'./data/data{num_of_data_file + 1}/data_information.csv', encoding='utf-8-sig')
+np.save(f'./data/data{num_of_data_file + 1}/input_data', input_data)
+file = open(f'./data/data{num_of_data_file + 1}/stl set range = {first_stl_set_num} ~ {last_stl_set_num}.txt', 'w', encoding='utf8')
+file.write(f'이 데이터는 stl set{first_stl_set_num} 부터 {last_stl_set_num} 까지,\n'
+           f'총 {last_stl_set_num - first_stl_set_num + 1}개 로 만들어진 data 입니다.')
 file.close()
-
 exit()
+# ############################## make file #############################################################################
+
+# np.save(f'./data/data{max_data_num}/number_of_data', case.shape[0])
+# np.save(f'./data/data{max_data_num}/num_bone1_points', Bone1_rand_sam_num)
+# np.save(f'./data/data{max_data_num}/num_bone2_points', Bone2_rand_sam_num)
+# np.save(f'./data/data{max_data_num}/num_skin_points', Skin_rand_sam_num)
+
+# file = open(f'./data/data{max_data_num}/information.txt', 'w', encoding='utf8')
+# line = f"set range : {first_set_num} ~ {last_set_num}, total {last_set_num - first_set_num + 1} sets\n\n" \
+#     f"number of Skin point : {int(skin_points/rand_sam_num)}\n" \
+#     f"size of Bone1 : {int(Bone1_points/rand_sam_num)}\n" \
+#     f"size of Bone2 : {int(Bone2_points/rand_sam_num)}\n\n" \
+#     f"< increasing process >\n" \
+#     f"(translate {trans_increasing_number}) X (rotation {rot_increasing_number}) X (up random {rand_sam_num})\n" \
+#     f"number of random target : {tar_increasing_number}\n\n" \
+#     f"number of data : {case.shape[0]}\n\n"
+# file.write(line)
+# print('\n\n추가 정보 기입')
+# string = str(input())
+# file.write(f'추가 정보: {string}')
+
+# file.close()
