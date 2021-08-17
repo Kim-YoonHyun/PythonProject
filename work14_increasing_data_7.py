@@ -155,31 +155,25 @@ class DataInformation:
         print(f'{np.array(self.data_vertices_list).shape}')
         print()
 
-    def rotation(self, num_of_rot, rot_x, rot_y, rot_z):
+    def rotation(self, num_of_rot, xyz_angle):
         print(f'<{self.data_name}>')
         print(f'data: {np.array(self.data_vertices_list).shape} --->', end=' ')
 
         result_vertices = []
-        for i in range(num_of_rot):
-            # rotation angle
-            x_degree = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
-            y_degree = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
-            z_degree = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
-            xyz_angle = np.array([x_degree, y_degree, z_degree])
-
+        for i in range(self.num_of_data):
             # rotation matrix
             x_matrix = np.expand_dims(np.array([
-                [1.,                     0.,                      0.],
-                [0., math.cos(xyz_angle[0]), -math.sin(xyz_angle[0])],
-                [0., math.sin(xyz_angle[0]), math.cos(xyz_angle[0])]]), axis=0)
+                [1.,                        0.,                         0.],
+                [0., math.cos(xyz_angle[i][0]), -math.sin(xyz_angle[i][0])],
+                [0., math.sin(xyz_angle[i][0]), math.cos(xyz_angle[i][0])]]), axis=0)
             y_matrix = np.expand_dims(np.array([
-                [ math.cos(xyz_angle[1]), 0., math.sin(xyz_angle[1])],
-                [                     0., 1.,                     0.],
-                [-math.sin(xyz_angle[1]), 0., math.cos(xyz_angle[1])]]), axis=0)
+                [ math.cos(xyz_angle[i][1]), 0., math.sin(xyz_angle[i][1])],
+                [                        0., 1.,                        0.],
+                [-math.sin(xyz_angle[i][1]), 0., math.cos(xyz_angle[i][1])]]), axis=0)
             z_matrix = np.expand_dims(np.array([
-                [math.cos(xyz_angle[2]), -math.sin(xyz_angle[2]), 0.],
-                [math.sin(xyz_angle[2]),  math.cos(xyz_angle[2]), 0.],
-                [                    0.,                      0., 1.]]), axis=0)
+                [math.cos(xyz_angle[i][2]), -math.sin(xyz_angle[i][2]), 0.],
+                [math.sin(xyz_angle[i][2]),  math.cos(xyz_angle[i][2]), 0.],
+                [                       0.,                         0., 1.]]), axis=0)
             xyz_rot_matrix = np.concatenate((x_matrix, y_matrix, z_matrix), axis=0)
 
             # rotation process
@@ -287,6 +281,24 @@ else:
 
 
 # < rotation > ------------------------------------------------
+# rotation angle
+xyz_angle = [
+    [
+        [
+        random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180),
+        random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180),
+        random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
+        ] for _ in range(num_of_rot)
+    ] for _ in range(target_data.num_of_data)
+]
+# x_degree = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
+# y_degree = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
+# z_degree = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
+print(np.array(xyz_angle))
+print(np.array(xyz_angle).shape)
+
+exit()
+
 print('rotation...')
 target_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
 bone1_data.rotation(num_of_rot, rot_x, rot_y, rot_z)
