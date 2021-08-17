@@ -7,58 +7,64 @@ import dill
 import math
 import pandas as pd
 
-
-s = pd.Series([100, 200, 300], index=['인덱스0', '인덱스1', '인덱스2'], dtype=np.int32)
-# print(s.index.values)
-# print(s[0])
-# print(s['인덱스0'])
-# print(s.인덱스0)
-# print(s[[0, 2]])
-# print(s[['인덱스0', '인덱스2']])
-# print(s[1:2])
-# print(s['인덱스1':'인덱스2'])
-s['인덱스3'] = 400
-# s.인덱스4 = 400
-# print(s)
-# print(s.notnull())
-
-data = {
-    "열0": ['aa', 'bb', 'cc'],
-    "열1": [100, 200, 300],
-    "열2": [400, 500, 600],
-    "열3": [700, 800, 900],
-    "열4": [1000, 1100, 1200],
-    "열5": [0.01, 0.02, 0.03]
-}
-columns = ["열0", "열1", "열2", "열3", "열4", "열5"]
-index = ["인덱스0", "인덱스1", "인덱스2"]
-
-df = pd.DataFrame(data, index=index, columns=columns)
+num_of_rot = 3  # rotation 을 통해 증가시킬 배수
+rot_x = [-5.0, 5.0]  # x 축에 대한 최대 rotation 범위
+rot_y = [-5.0, 5.0]  # y 축에 대한 최대 rotation 범위
+rot_z = [-5.0, 5.0]  # z 축에 대한 최대 rotation 범위
 
 
-# print(df)
-# print(df.열0[0])
-# print(df.열0['인덱스0'])
-# print(df.열0.인덱스0)
-# print(df.열0.values)
-# print(df.columns.values)
-df['열6'] = [1, 2, 3]
-# print(df)
-# print(df[[13]])
-df.to_csv('sample.csv')
-# df2 = pd.read_csv('sample.csv', names=['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7'])
-df2 = pd.read_csv('sample.csv', header=None)
+all_rot_matrix = []
+num_of_data = 2
+for j in range(num_of_data):
+    xyz_rot_matrix = []
+    for i in range(num_of_rot):
+        x_angle = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
+        y_angle = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
+        z_angle = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
 
-data = [
-    ['aa', 'bb', 'cc'],
-    [100, 200, 300],
-    [400, 500, 600]
-]
-index = ["인덱스0", "인덱스1", "인덱스2"]
+        x_matrix = np.array([
+                        [1.,                        0.,                         0.],
+                        [0., math.cos(x_angle), -math.sin(x_angle)],
+                        [0., math.sin(x_angle), math.cos(x_angle)]])
+        y_matrix = np.array([
+                        [ math.cos(y_angle), 0., math.sin(y_angle)],
+                        [                        0., 1.,                        0.],
+                        [-math.sin(y_angle), 0., math.cos(y_angle)]])
+        z_matrix = np.array([
+                        [math.cos(z_angle), -math.sin(z_angle), 0.],
+                        [math.sin(z_angle),  math.cos(z_angle), 0.],
+                        [                       0.,                         0., 1.]])
+        xy_matrix = np.dot(x_matrix, y_matrix)
+        xyz_matrix = np.dot(xy_matrix, z_matrix)
+        xyz_rot_matrix.append(xyz_matrix)
+    all_rot_matrix.append(xyz_rot_matrix)
 
-df3 = pd.DataFrame(data, index=index)
-# print(df3)
-# print(df3[[0]])
-# print(df.loc[['인덱스1']:['인덱스2']])
-print(df[])
+
+# print(np.array(all_rot_matrix))
+# print(np.array(all_rot_matrix).shape)
+b = np.arange(0, num_of_data*2*3).reshape(num_of_data, 2, 3)
+# print(b)
+# print(b.shape)
+
+temp_list = []
+for j in range(num_of_data):
+    # print(b[j])
+    print(b[j].shape)
+    # print(np.array(all_rot_matrix)[j])
+    print(np.array(all_rot_matrix)[j].shape)
+    c = np.dot(b[j], all_rot_matrix[j])
+    print(c)
+    print(c.shape)
+    e = np.expand_dims(c, axis=-2)
+    print(e.shape)
+
+    ee = np.concatenate((e), axis=1)
+    print(ee)
+    print(ee.shape)
+    temp_list.append(ee)
+print(np.array(temp_list).shape)
+temp_array = np.concatenate((temp_list), axis=0)
+print(temp_array)
+print(temp_array.shape)
+
 

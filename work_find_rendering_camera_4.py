@@ -117,11 +117,9 @@ while index != 10000:
     tar_actor = Functions.point_actor(tar, target_point_size, target_point_color)
     Skin_actor1 = Functions.point_actor(sur, Skin_point_size, Skin_point_color1)
     Skin_actor2 = Functions.point_actor(sur, Skin_point_size, Skin_point_color2)
-    Skin_actor3 = Functions.point_actor(sur, Skin_point_size, Skin_point_color2)
 
     Skin_actor1.SetPosition(-position, 0, 0)
     Skin_actor2.SetPosition(position, 0, 0)
-    Skin_actor3.SetPosition(0, 0, position)
 
     # add actor
     if add_B1_actor == 'on':
@@ -133,7 +131,6 @@ while index != 10000:
     if add_Skin_actor == 'on':
         ren.AddActor(Skin_actor1)
         ren.AddActor(Skin_actor2)
-        ren.AddActor(Skin_actor3)
 
     ren.SetBackground(1, 1, 1)
 
@@ -165,6 +162,5 @@ while index != 10000:
     if add_Skin_actor == 'on':
         ren.RemoveActor(Skin_actor1)
         ren.RemoveActor(Skin_actor2)
-        ren.RemoveActor(Skin_actor3)
     if add_tar_actor == 'on':
         ren.RemoveActor(tar_actor)
