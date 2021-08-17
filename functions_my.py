@@ -33,38 +33,38 @@ def euclidean_distance(start, end):
     value = np.sqrt(np.sum(np.square(np.subtract(start, end)), axis=-1))
     return value
 
-def up_sampling(stl_vertices_list, num_of_new_vertices):
-    """
-    function of make some new vertices to up sampling the vertices list
-    :param stl_vertices_list: initial vertices
-    :param num_of_new_vertices: number of make new vertices
-    :return: up sampled vertices list
-    """
-    temp_stl_vertices_list = copy.deepcopy(stl_vertices_list)
-    for i in range(num_of_new_vertices):
-        rand_index = random.randint(0, len(temp_stl_vertices_list) - 1)
-        rand_vertex = temp_stl_vertices_list.pop(rand_index)
-        index_list = [j for j in range(len(temp_stl_vertices_list))]
+# def up_sampling(stl_vertices_list, num_of_new_vertices):
+#     """
+#     function of make some new vertices to up sampling the vertices list
+#     :param stl_vertices_list: initial vertices
+#     :param num_of_new_vertices: number of make new vertices
+#     :return: up sampled vertices list
+#     """
+#     temp_stl_vertices_list = copy.deepcopy(stl_vertices_list)
+#     for i in range(num_of_new_vertices):
+#         rand_index = random.randint(0, len(temp_stl_vertices_list) - 1)
+#         rand_vertex = temp_stl_vertices_list.pop(rand_index)
+#         index_list = [j for j in range(len(temp_stl_vertices_list))]
+#
+#         distance_of_rand_vertex_to_rest_vertices = euclidean_distance(rand_vertex, temp_stl_vertices_list)
+#         temp_dict = dict(zip(distance_of_rand_vertex_to_rest_vertices, index_list))
+#         nearest_index = temp_dict[np.min(distance_of_rand_vertex_to_rest_vertices)]
+#         nearest_vertex = temp_stl_vertices_list[nearest_index]
+#         middle_vertex = list(np.average((np.array(rand_vertex), np.array(nearest_vertex)), axis=0))
+#         stl_vertices_list.append(middle_vertex)
+#
+#     return stl_vertices_list
 
-        distance_of_rand_vertex_to_rest_vertices = euclidean_distance(rand_vertex, temp_stl_vertices_list)
-        temp_dict = dict(zip(distance_of_rand_vertex_to_rest_vertices, index_list))
-        nearest_index = temp_dict[np.min(distance_of_rand_vertex_to_rest_vertices)]
-        nearest_vertex = temp_stl_vertices_list[nearest_index]
-        middle_vertex = list(np.average((np.array(rand_vertex), np.array(nearest_vertex)), axis=0))
-        stl_vertices_list.append(middle_vertex)
-
-    return stl_vertices_list
-
-def random_sampling(stl_vertices_list, up_num_of_stl_points, num_of_rand_sam):
-    ran_up_all_vertices_list = []
-    for i in range((len(stl_vertices_list))):
-        for _ in range(num_of_rand_sam):
-            temp_list = []
-            for _ in range(int(up_num_of_stl_points/num_of_rand_sam)):
-                rand_index = random.randint(0, len(stl_vertices_list[i])-1)
-                temp_list.append(stl_vertices_list[i].pop(rand_index))
-            ran_up_all_vertices_list.append(temp_list)
-    return ran_up_all_vertices_list
+# def random_sampling(stl_vertices_list, up_num_of_stl_points, num_of_rand_sam):
+#     ran_up_all_vertices_list = []
+#     for i in range((len(stl_vertices_list))):
+#         for _ in range(num_of_rand_sam):
+#             temp_list = []
+#             for _ in range(int(up_num_of_stl_points/num_of_rand_sam)):
+#                 rand_index = random.randint(0, len(stl_vertices_list[i])-1)
+#                 temp_list.append(stl_vertices_list[i].pop(rand_index))
+#             ran_up_all_vertices_list.append(temp_list)
+#     return ran_up_all_vertices_list
 
 
 
@@ -136,28 +136,28 @@ def random_sampling(stl_vertices_list, up_num_of_stl_points, num_of_rand_sam):
 
 
 
-def make_set(list_of_set_num, all_property_num, set_path, call_extension):
-    set = {}
-    for i in range(list_of_set_num.shape[0]):
-        center_list = []
-        set[list_of_set_num[i]] = make_dict_with_sets(list_of_set_num[i], set_path, call_extension)
-        for j in range(all_property_num):
-            center_list.append(np.expand_dims(np.average(set[list_of_set_num[i]][f'property{j}']['array'], axis=0), axis=0))
-        # center_list.append(np.expand_dims(np.average(set[set_num[i]]['property1']['array'], axis=0), axis=0))
-        # center_list.append(np.expand_dims(np.average(set[set_num[i]]['property2']['array'], axis=0), axis=0))
-        # center_list.append(np.expand_dims(np.average(set[set_num[i]]['property3']['array'], axis=0), axis=0))
-        array_tar = center_list[0]
-        flag = 1
-        while flag != 0:
-            flag = 0
-            for j in range(set[list_of_set_num[i]]['property0']['number of point']):
-                if array_tar[0][1] > set[list_of_set_num[i]]['property0']['array'][j][1]:
-                    array_tar[0][1] -= 1
-                    flag += 1
-        array_tar[0][1] -= 1
-        set[list_of_set_num[i]][f'property{all_property_num}'] = {}
-        set[list_of_set_num[i]][f'property{all_property_num}']['number of point'] = array_tar.shape[0]
-        set[list_of_set_num[i]][f'property{all_property_num}']['array'] = array_tar
-        set[list_of_set_num[i]][f'property{all_property_num}']['name of model'] = 'target'
-
-    return set, center_list
+# def make_set(list_of_set_num, all_property_num, set_path, call_extension):
+#     set = {}
+#     for i in range(list_of_set_num.shape[0]):
+#         center_list = []
+#         set[list_of_set_num[i]] = make_dict_with_sets(list_of_set_num[i], set_path, call_extension)
+#         for j in range(all_property_num):
+#             center_list.append(np.expand_dims(np.average(set[list_of_set_num[i]][f'property{j}']['array'], axis=0), axis=0))
+#         # center_list.append(np.expand_dims(np.average(set[set_num[i]]['property1']['array'], axis=0), axis=0))
+#         # center_list.append(np.expand_dims(np.average(set[set_num[i]]['property2']['array'], axis=0), axis=0))
+#         # center_list.append(np.expand_dims(np.average(set[set_num[i]]['property3']['array'], axis=0), axis=0))
+#         array_tar = center_list[0]
+#         flag = 1
+#         while flag != 0:
+#             flag = 0
+#             for j in range(set[list_of_set_num[i]]['property0']['number of point']):
+#                 if array_tar[0][1] > set[list_of_set_num[i]]['property0']['array'][j][1]:
+#                     array_tar[0][1] -= 1
+#                     flag += 1
+#         array_tar[0][1] -= 1
+#         set[list_of_set_num[i]][f'property{all_property_num}'] = {}
+#         set[list_of_set_num[i]][f'property{all_property_num}']['number of point'] = array_tar.shape[0]
+#         set[list_of_set_num[i]][f'property{all_property_num}']['array'] = array_tar
+#         set[list_of_set_num[i]][f'property{all_property_num}']['name of model'] = 'target'
+#
+#     return set, center_list
