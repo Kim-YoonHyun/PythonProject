@@ -338,7 +338,7 @@ print(df)
 
 input_data = np.concatenate((all_data_vertices_list), axis=1)
 print(f'input data size: {input_data.shape}')
-
+print(1)
 
 
 # case = np.concatenate((all_inc_up_rand_Skin_array, all_inc_up_rand_Bone1_array), axis=1)
