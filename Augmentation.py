@@ -64,7 +64,7 @@ class DataInformation:
         self.data_vertices_list = ran_sam_vertices_list
         self.num_of_data *= num_of_rand_sam
         self.num_of_data_points = int(up_num_of_stl_points / num_of_rand_sam)
-        self.rand_sam_status = f'/{num_of_rand_sam}'
+        self.rand_sam_status = f'rand/{num_of_rand_sam}'
         print()
 
     def translate(self, xyz_offset, num_of_trans):
@@ -82,7 +82,7 @@ class DataInformation:
             ]
         self.num_of_data *= num_of_trans
         self.data_vertices_list = np.concatenate(temp_list, axis=0).tolist()
-        self.trans_status = f'trans X {num_of_trans}'
+        self.trans_status = f'transX{num_of_trans}'
         print(f'{np.array(self.data_vertices_list).shape}')
         print()
 
@@ -107,7 +107,7 @@ class DataInformation:
 
         self.num_of_data *= num_of_rot
         self.data_vertices_list = all_result_vertices.tolist()
-        self.rot_status = f'rot X {num_of_rot}'
+        self.rot_status = f'rotX{num_of_rot}'
 
         print(f'{np.array(self.data_vertices_list).shape}')
         print()

@@ -1,12 +1,14 @@
+.idea/
 data/
 data_for_find_rendering_camera/
 image/
+original code/
 stl/
 tensorflow_test_result/
 tensorflow_training_model/
 test_result/
 training_model/
-.idea/
+
 
 
 # Byte-compiled / optimized / DLL files
