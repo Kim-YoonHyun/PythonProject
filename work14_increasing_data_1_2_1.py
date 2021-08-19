@@ -29,20 +29,19 @@
 # _8
 # rotation 완료
 # pandas 를 통해 data 저장
-# _8_1
+
+# _1_2_1
 # class module 저장
 
 if __name__ == '__main__':
     import numpy as np
     import os
-    import functions_my
+    import functions_my_1_2_1 as fmy
     import random
-    import math
     import dill  # _7
     import pandas as pd  # _8
-    import Augmentation  # _8
+    import Augmentation_1_2_1 as Aug
     import warnings
-
     warnings.filterwarnings(action='ignore')
 
     # basic parameter
@@ -81,10 +80,10 @@ if __name__ == '__main__':
     stl_set_path = f'stl/'
 
     # 각 데이터별 class 세팅
-    target_data = Augmentation.DataInformation('target')
-    bone1_data = Augmentation.DataInformation('bone1')
-    bone2_data = Augmentation.DataInformation('bone2')
-    skin_data = Augmentation.DataInformation('skin')
+    target_data = Aug.DataInformation('target')
+    bone1_data = Aug.DataInformation('bone1')
+    bone2_data = Aug.DataInformation('bone2')
+    skin_data = Aug.DataInformation('skin')
 
     # <초기 데이터 불러오기> ------------------------------------------------------------
     for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
@@ -93,7 +92,7 @@ if __name__ == '__main__':
         for file_name in file_list:
             if '.stl' in file_name:
                 stl_name = file_name.split('.')[-2]
-                stl_vertices_list, num_of_stl_points = functions_my.read_stl(f'{stl_set_path}/set{stl_set_num}',
+                stl_vertices_list, num_of_stl_points = fmy.read_stl(f'{stl_set_path}/set{stl_set_num}',
                                                                              stl_name)
                 # Disc 데이터를 target 데이터로 바꾸기
                 if stl_name[0] == 'D':
@@ -153,59 +152,32 @@ if __name__ == '__main__':
     # <translate> -----------------------------------------------------------
     if num_of_trans > 1:
         print('translate...')
-        xyz_offset = [
-            [
-                [round(random.uniform(trans_x[0], trans_x[1]), 5),
-                 round(random.uniform(trans_y[0], trans_y[1]), 5),
-                 round(random.uniform(trans_z[0], trans_z[1]), 5)] for _ in range(num_of_trans)
-            ] for i in range(target_data.num_of_data)
-        ]
-        xyz_offset = np.expand_dims(np.array(xyz_offset), axis=2)
-        target_data.translate(xyz_offset, num_of_trans)
-        bone1_data.translate(xyz_offset, num_of_trans)
-        bone2_data.translate(xyz_offset, num_of_trans)
-        skin_data.translate(xyz_offset, num_of_trans)
+        # make trans offset
+        target_trans_offset = fmy.make_trans_offset(target_data.num_of_data, num_of_trans, trans_x, trans_y, trans_z)
+        bone_trans_offset = fmy.make_trans_offset(bone1_data.num_of_data, num_of_trans, trans_x, trans_y, trans_z)
+        skin_trans_offset = fmy.make_trans_offset(skin_data.num_of_data, num_of_trans, trans_x, trans_y, trans_z)
+
+        # translate
+        target_data.translate(target_trans_offset, num_of_trans)
+        bone1_data.translate(bone_trans_offset, num_of_trans)
+        bone2_data.translate(bone_trans_offset, num_of_trans)
+        skin_data.translate(skin_trans_offset, num_of_trans)
     else:
         print(f'not translate')
-
-    skin_array = np.array(skin_data.data_vertices_list)
-    np.save(f'./skin_array', skin_array)
-    exit()
 
     # < rotation > ------------------------------------------------
     if num_of_rot > 1:
         print('rotation...')
-
         # rotation matrix
-        all_rot_matrices = []
-        for j in range(target_data.num_of_data):
-            xyz_rot_matrix = []
-            for i in range(num_of_rot):
-                x_angle = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
-                y_angle = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
-                z_angle = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
-                x_matrix = np.array([
-                    [1., 0., 0.],
-                    [0., math.cos(x_angle), -math.sin(x_angle)],
-                    [0., math.sin(x_angle), math.cos(x_angle)]])
-                y_matrix = np.array([
-                    [math.cos(y_angle), 0., math.sin(y_angle)],
-                    [0., 1., 0.],
-                    [-math.sin(y_angle), 0., math.cos(y_angle)]])
-                z_matrix = np.array([
-                    [math.cos(z_angle), -math.sin(z_angle), 0.],
-                    [math.sin(z_angle), math.cos(z_angle), 0.],
-                    [0., 0., 1.]])
-                xy_matrix = np.dot(x_matrix, y_matrix)
-                xyz_matrix = np.dot(xy_matrix, z_matrix)
-                xyz_rot_matrix.append(xyz_matrix)
-            all_rot_matrices.append(xyz_rot_matrix)
+        target_rot_matrix = fmy.make_rot_matrices(target_data.num_of_data, num_of_rot, rot_x, rot_y, rot_z)
+        bone_rot_matrix = fmy.make_rot_matrices(bone1_data.num_of_data, num_of_rot, rot_x, rot_y, rot_z)
+        skin_rot_matrix = fmy.make_rot_matrices(skin_data.num_of_data, num_of_rot, rot_x, rot_y, rot_z)
 
         # rotation
-        target_data.rotation(num_of_rot, all_rot_matrices)
-        bone1_data.rotation(num_of_rot, all_rot_matrices)
-        bone2_data.rotation(num_of_rot, all_rot_matrices)
-        skin_data.rotation(num_of_rot, all_rot_matrices)
+        target_data.rotation(num_of_rot, target_rot_matrix)
+        bone1_data.rotation(num_of_rot, bone_rot_matrix)
+        bone2_data.rotation(num_of_rot, bone_rot_matrix)
+        skin_data.rotation(num_of_rot, skin_rot_matrix)
     else:
         print('not rotation')
 

@@ -6,11 +6,19 @@ import time
 import dill
 import math
 import pandas as pd
-import functions_my
-
+import functions_my_1_2_1 as fmy
 import vtk
-import functions_vtk
+import functions_vtk as fvtk
 
+
+# a = np.arange(-45, 45).reshape(5, 2, 3, 3)
+# b = np.arange(0, 60).reshape(5, 4, 3)
+# print(a[0].shape)
+# print(b[0].shape)
+# c = np.dot(b[0], a[0])
+# print(c)
+# print(c.shape)
+# exit()
 # Rendering camera 관련
 position = 20
 
@@ -81,7 +89,7 @@ while True:
     if i == point_lists.shape[0]:
         i = 0
     # model_actor - 특정 색 입히기
-    model_actor_color = functions_vtk.point_actor(point_lists[i], point_size2, point_color)
+    model_actor_color = fvtk.point_actor(point_lists[i], point_size2, point_color)
     model_actor_color.SetPosition(position, 0, 0)
 
     # add actor

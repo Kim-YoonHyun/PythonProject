@@ -3,6 +3,8 @@ import numpy as np
 import math
 import os
 import dill
+import random
+
 
 def read_stl(path, stl_name):
     """
@@ -21,6 +23,7 @@ def read_stl(path, stl_name):
     )
     return stl_vertices_list, num_of_stl_points
 
+
 def euclidean_distance(start, end):
     """
     function of calculate the euclidean distance from start to end
@@ -32,9 +35,60 @@ def euclidean_distance(start, end):
     value = np.sqrt(np.sum(np.square(np.subtract(start, end)), axis=-1))
     return value
 
+
+# ver 1.2.1 추가 함수
+def make_trans_offset(num_of_data, num_of_trans, trans_x, trans_y, trans_z):
+    xyz_offset = [
+        [
+            [round(random.uniform(trans_x[0], trans_x[1]), 5),
+             round(random.uniform(trans_y[0], trans_y[1]), 5),
+             round(random.uniform(trans_z[0], trans_z[1]), 5)] for _ in range(num_of_trans)
+        ] for i in range(num_of_data)
+    ]
+    # xyz_offset = np.expand_dims(np.array(xyz_offset), axis=2)
+    return xyz_offset
+
+
+def make_rot_matrices(num_of_data, num_of_rot, rot_x, rot_y, rot_z):
+    """
+    point cloud에 회전을 적용하기 위한 matrix를 계산하는 함수.
+    :param num_of_data: 회전을 적용할 데이터의 갯수
+    :param num_of_rot: 회전을 통해 늘릴 데이터 배수
+    :param rot_x: x 축으로 회전을 적용할 범위
+    :param rot_y: y 축으로 회전을 적용할 범위
+    :param rot_z: z 축으로 회전을 적용할 범위
+    :return: (num_of_data, num_of_rot, 3, 3)
+    """
+    all_rot_matrices = []
+    for j in range(num_of_data):
+        xyz_rot_matrix = []
+        for i in range(num_of_rot):
+            x_angle = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
+            y_angle = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
+            z_angle = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
+            x_matrix = np.array([
+                [1., 0., 0.],
+                [0., math.cos(x_angle), -math.sin(x_angle)],
+                [0., math.sin(x_angle), math.cos(x_angle)]])
+            y_matrix = np.array([
+                [math.cos(y_angle), 0., math.sin(y_angle)],
+                [0., 1., 0.],
+                [-math.sin(y_angle), 0., math.cos(y_angle)]])
+            z_matrix = np.array([
+                [math.cos(z_angle), -math.sin(z_angle), 0.],
+                [math.sin(z_angle), math.cos(z_angle), 0.],
+                [0., 0., 1.]])
+            xy_matrix = np.dot(x_matrix, y_matrix)
+            xyz_matrix = np.dot(xy_matrix, z_matrix)
+            xyz_rot_matrix.append(xyz_matrix)
+        all_rot_matrices.append(xyz_rot_matrix)
+    return all_rot_matrices
+
+
 def abs_vector(vertex):
     value = np.sqrt(np.sum(np.square(vertex), axis=-1))
     return value
+
 
 def calculate_point_to_line_length(center_array, start_array, target_array):
     """
@@ -64,6 +118,7 @@ def calculate_point_to_line_length(center_array, start_array, target_array):
     L = np.array(L)
     return L
 
+
 def data_list_title(path):
     """
     class 객체를 불러와서 그 정보를 표시하는 함수
@@ -73,11 +128,10 @@ def data_list_title(path):
     data_list = os.listdir(path)
     for idx, data in enumerate(data_list):
         array_size = np.load(f'{path}/{data}/input_data.npy').shape
-        if idx < 5:
-            with open(f'{path}/{data}/input_data.pkl', 'rb') as file:
-                _, bone1_data, _, _ = dill.load(file)
-        else:
-            with open(f'{path}/{data}/data_information.pkl', 'rb') as file:
-                _, bone1_data, _, _ = dill.load(file)
+        with open(f'{path}/{data}/data_information.pkl', 'rb') as file:
+            _, bone1_data, _, _ = dill.load(file)
 
         print(f'{data}: {array_size}, [{bone1_data.rand_sam_status}, {bone1_data.trans_status}, {bone1_data.rot_status}]')
+
+
+
