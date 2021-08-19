@@ -1,5 +1,5 @@
 import numpy as np
-import functions_my
+import functions_my_1_2_1 as fmy
 import copy
 import random
 
@@ -35,7 +35,7 @@ class DataInformation:
             print(f'data{data_index}: {np.array(temp_vertices_list).shape} --->', end=' ')
             for _ in range(up_num_of_stl_points - self.num_of_data_points[data_index]):
                 rand_vertex = temp_vertices_list.pop(random.randint(0, len(temp_vertices_list) - 1))
-                distance_of_rand_vertex_to_rest_vertices = functions_my.euclidean_distance(rand_vertex, temp_vertices_list)
+                distance_of_rand_vertex_to_rest_vertices = fmy.euclidean_distance(rand_vertex, temp_vertices_list)
                 nearest_vertex = temp_vertices_list[np.argmin(distance_of_rand_vertex_to_rest_vertices)]
                 middle_vertex = list(np.average((np.array(rand_vertex), np.array(nearest_vertex)), axis=0))
                 self.data_vertices_list[data_index].append(middle_vertex)
@@ -75,16 +75,15 @@ class DataInformation:
         """
         print(f'<{self.data_name}>')
         print(f'data: {np.array(self.data_vertices_list).shape} --->', end=' ')
-        for data_index in range(self.num_of_data):
-            temp_list = [
-                np.add(np.array(self.data_vertices_list[data_index]), xyz_offset[i]).tolist()
-                for i in range(len(xyz_offset))
-            ]
-        self.num_of_data *= num_of_trans
-        self.data_vertices_list = np.concatenate(temp_list, axis=0).tolist()
-        self.trans_status = f'transX{num_of_trans}'
-        print(f'{np.array(self.data_vertices_list).shape}')
+        xyz_offset = np.expand_dims(np.array(xyz_offset), axis=-2)
+        temp_list = [np.add(self.data_vertices_list[i], xyz_offset[i]).tolist() for i in range(self.num_of_data)]
+        result_vertices = np.concatenate(temp_list, axis=0).tolist()
+        print(f'{np.array(result_vertices).shape}')
         print()
+
+        self.num_of_data *= num_of_trans
+        self.data_vertices_list = result_vertices
+        self.trans_status = f'transX{num_of_trans}'
 
     def rotation(self, num_of_rot, xyz_rot_matrices):
         """
@@ -93,21 +92,28 @@ class DataInformation:
         """
         print(f'<{self.data_name}>')
         print(f'data: {np.array(self.data_vertices_list).shape} --->', end=' ')
-
         center_vertex = np.average(np.array(self.data_vertices_list), axis=1)
         temp_list = []
         for i in range(self.num_of_data):
-            trans_to_zero_coordinate = np.subtract(np.array(self.data_vertices_list), center_vertex[i])
-            rot_vertices = np.dot(trans_to_zero_coordinate[i], xyz_rot_matrices[i])
+            # 원점으로 옮기기
+            trans_to_zero_coordinate = np.subtract(np.array(self.data_vertices_list)[i], center_vertex[i])
+
+            # rotation
+            rot_vertices = np.dot(trans_to_zero_coordinate, xyz_rot_matrices[i])
             rot_vertices_expanded = np.expand_dims(rot_vertices, axis=-2)
             result_vertices_zero = np.concatenate((rot_vertices_expanded), axis=1)
+            
+            # 원래 위치로 되돌리기
             trans_to_origin_coordinate = np.add(result_vertices_zero, center_vertex[i])
+            
+            # list 에 넣기
             temp_list.append(trans_to_origin_coordinate)
-        all_result_vertices = np.concatenate((temp_list), axis=0)
+
+        all_result_vertices = np.concatenate(temp_list, axis=0)
+        print(f'{all_result_vertices.shape}')
+        print()
 
         self.num_of_data *= num_of_rot
         self.data_vertices_list = all_result_vertices.tolist()
         self.rot_status = f'rotX{num_of_rot}'
 
-        print(f'{np.array(self.data_vertices_list).shape}')
-        print()
