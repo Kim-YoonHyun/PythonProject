@@ -1,3 +1,5 @@
+# 기본이 되는 구조
+
 import vtk
 import functions_vtk
 
@@ -63,7 +65,10 @@ interactorStyle = vtk.vtkInteractorStyleTrackballCamera()
 iren.SetInteractorStyle(interactorStyle)
 iren.SetRenderWindow(renWin)
 
-
+"""
+# 반복 렌더링 시
+while True:
+"""
 # model actor - 0~1 분포도
 point_list1 = [
     [1, 2, 3],
@@ -88,7 +93,7 @@ renWin.Render()
 iren.Initialize()
 
 """
-# 랜더링 이미지 저장
+# 랜더링 이미지 저장 (이 위치에서만 가능)
 windowToImageFilter = vtk.vtkWindowToImageFilter()
 windowToImageFilter.SetInput(renWin)
 windowToImageFilter.ReadFrontBufferOff()
@@ -102,7 +107,7 @@ writer.Write()
 
 """
 # 반복 렌더링이 필요한 경우
-# renderWindow.RemoveRenderer(renderer)
+iren.Start() # 반복 중간중간 제어가 필요할 때 사용
 ren.RemoveActor(model_actor_distribution)
 ren.RemoveActor(model_actor_color)
 """

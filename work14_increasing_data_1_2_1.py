@@ -22,13 +22,14 @@
 # class 사용해서 코드 간소화
 
 # _7
-# class 활용하여 target, bone1, bone2, skin 각 데이터별 정보 분리, 
+# class 활용하여 target, bone1, bone2, skin 각 데이터별 정보 분리,
 # up, random sampling 및 translate, rotation 적용 여부 및 각 데이터 정보를 전부 class 에 저장
 # dill 추가 (class 인스턴스 객체 저장용)
 
 # _8
 # rotation 완료
 # pandas 를 통해 data 저장
+# _8_1
 # class module 저장
 
 if __name__ == '__main__':
@@ -41,6 +42,7 @@ if __name__ == '__main__':
     import pandas as pd  # _8
     import Augmentation  # _8
     import warnings
+
     warnings.filterwarnings(action='ignore')
 
     # basic parameter
@@ -77,7 +79,7 @@ if __name__ == '__main__':
     # set 번호 범위 지정
     stl_set_order_range = list(range(first_stl_set_num, last_stl_set_num + 1))
     stl_set_path = f'stl/'
-    
+
     # 각 데이터별 class 세팅
     target_data = Augmentation.DataInformation('target')
     bone1_data = Augmentation.DataInformation('bone1')
@@ -143,7 +145,7 @@ if __name__ == '__main__':
         for j in range(num_of_rand_sam)
     ]
     target_data.num_of_data *= num_of_rand_sam
-    target_data.rand_sam_status = f'copy X {num_of_rand_sam}'
+    target_data.rand_sam_status = f'copyX{num_of_rand_sam}'
     bone1_data.random_sampling(up_num_of_bone1_points, num_of_rand_sam)
     bone2_data.random_sampling(up_num_of_bone2_points, num_of_rand_sam)
     skin_data.random_sampling(up_num_of_skin_points, num_of_rand_sam)
@@ -166,6 +168,10 @@ if __name__ == '__main__':
     else:
         print(f'not translate')
 
+    skin_array = np.array(skin_data.data_vertices_list)
+    np.save(f'./skin_array', skin_array)
+    exit()
+
     # < rotation > ------------------------------------------------
     if num_of_rot > 1:
         print('rotation...')
@@ -175,21 +181,21 @@ if __name__ == '__main__':
         for j in range(target_data.num_of_data):
             xyz_rot_matrix = []
             for i in range(num_of_rot):
-                x_angle = random.uniform(rot_x[0], rot_x[1]) * (math.pi/180)
-                y_angle = random.uniform(rot_y[0], rot_y[1]) * (math.pi/180)
-                z_angle = random.uniform(rot_z[0], rot_z[1]) * (math.pi/180)
+                x_angle = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
+                y_angle = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
+                z_angle = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
                 x_matrix = np.array([
-                    [1.,                0.,                 0.],
+                    [1., 0., 0.],
                     [0., math.cos(x_angle), -math.sin(x_angle)],
                     [0., math.sin(x_angle), math.cos(x_angle)]])
                 y_matrix = np.array([
                     [math.cos(y_angle), 0., math.sin(y_angle)],
-                    [0.,                1.,                0.],
+                    [0., 1., 0.],
                     [-math.sin(y_angle), 0., math.cos(y_angle)]])
                 z_matrix = np.array([
                     [math.cos(z_angle), -math.sin(z_angle), 0.],
-                    [math.sin(z_angle),  math.cos(z_angle), 0.],
-                    [0.,                                0., 1.]])
+                    [math.sin(z_angle), math.cos(z_angle), 0.],
+                    [0., 0., 1.]])
                 xy_matrix = np.dot(x_matrix, y_matrix)
                 xyz_matrix = np.dot(xy_matrix, z_matrix)
                 xyz_rot_matrix.append(xyz_matrix)
@@ -205,7 +211,7 @@ if __name__ == '__main__':
 
     # <data 정리>------------------------------------------------------------
     all_data = [target_data, bone1_data, bone2_data, skin_data]
-    num_of_data_list,  num_of_data_point_list, array_size_list, data_name_list = [], [], [], []
+    num_of_data_list, num_of_data_point_list, array_size_list, data_name_list = [], [], [], []
     up_sam_status_list, rand_sam_status_list, trans_status_list, rot_status_list = [], [], [], []
     all_data_vertices_list = []
 
@@ -260,18 +266,26 @@ if __name__ == '__main__':
     # print(case.shape)
     #
 
-    # ############################## make data folder ######################################################################
+    # <각종 데이터 저장>--------------------------------------------------------------------
+    # 저장 폴더 만들기
     num_of_data_file = len(os.walk('./data/').__next__()[1])
     data_save_path = f'./data/data{num_of_data_file + 1}'
     if not os.path.isdir(f'{data_save_path}'):  # 해당 경로 내에 폴더가 없으면,
         os.makedirs(f'{data_save_path}')  # 그 폴더를 만들기
 
-    # <각종 데이터 저장>--------------------------------------------------------------------
-    with open(f'{data_save_path}/input_data.pkl', 'wb') as file:
+    # class 객체 저장
+    with open(f'{data_save_path}/data_information.pkl', 'wb') as file:
         dill.dump(all_data, file)
+    
+    # csv 저장
     df.to_csv(f'{data_save_path}/data_information.csv', encoding='utf-8-sig')
+    
+    # npy 저장
     np.save(f'{data_save_path}/input_data', input_data)
-    with open(f'{data_save_path}/stl set range = {first_stl_set_num} ~ {last_stl_set_num}.txt', 'w', encoding='utf8') as file:
+    
+    # txt 저장
+    with open(f'{data_save_path}/stl set range = {first_stl_set_num} ~ {last_stl_set_num}.txt', 'w',
+              encoding='utf8') as file:
         file.write(f'이 데이터는 stl set{first_stl_set_num} 부터 {last_stl_set_num} 까지,\n'
                    f'총 {last_stl_set_num - first_stl_set_num + 1}개 로 만들어진 data 입니다.')
     exit()
