@@ -32,6 +32,7 @@
 
 # _1_2_1
 # class module 저장
+# mutil target 생성 추가
 
 if __name__ == '__main__':
     import numpy as np
@@ -181,6 +182,31 @@ if __name__ == '__main__':
     else:
         print('not rotation')
 
+    # <multi target>----------------------------------------------------
+    offset = fmy.make_trans_offset(54, 20, [-5., 5.], [-5., 5.], [-5., 5.])
+    print(np.array(offset).shape)
+
+    target_data.translate(offset, 20)
+    print(target_data)
+
+    temp_list = []
+    all_b1b2s_data = [bone1_data, bone2_data, skin_data]
+    for data in all_b1b2s_data:
+        temp_list.append(data.data_vertices_list)
+    temp_array = np.concatenate(temp_list, axis=1)
+    print(temp_array.shape)
+    print(temp_array[0].shape)
+
+    aaa = []
+    for i in range(54):
+        temp_array2 = np.tile(temp_array[i], [20, 1, 1])
+        multi_tar = np.array(target_data.data_vertices_list)[0 + 20 * i: 20 + 20 * i, :, :]
+        multi_data = np.concatenate((temp_array2, multi_tar), axis=1)
+        aaa.append(multi_data)
+    result = np.concatenate(aaa, axis=0)
+
+
+    exit()
     # <data 정리>------------------------------------------------------------
     all_data = [target_data, bone1_data, bone2_data, skin_data]
     num_of_data_list, num_of_data_point_list, array_size_list, data_name_list = [], [], [], []
@@ -209,34 +235,6 @@ if __name__ == '__main__':
     input_data = np.concatenate(all_data_vertices_list, axis=1)
     print(f'input data size: {input_data.shape}')
 
-    # case = np.concatenate((all_inc_up_rand_Skin_array, all_inc_up_rand_Bone1_array), axis=1)
-    # case = np.concatenate((case, all_inc_up_rand_Bone2_array), axis=1)
-    # case = np.concatenate((case, all_inc_rand_tar_arrays), axis=1)
-    #
-    # all_points = int((skin_points + Bone1_points + Bone2_points) / rand_sam_num)
-    #
-    # all_case = np.zeros([1, all_points + 1, 3])
-    #
-    # for i in range(case.shape[0]):
-    #     copy_case = np.copy(case[i][:all_points, :])
-    #     x_offset, y_offset, z_offset = Functions.make_offset_distance(tar_increasing_number - 1, tar_x[0], tar_x[1],
-    #                                                                   tar_y[0], tar_y[1], tar_z[0], tar_z[1])
-    #     all_Target = Functions.make_all_offset(case[i][all_points], x_offset, y_offset, z_offset, tar_increasing_number - 1)
-    #     copy_lists = []
-    #     for j in range(tar_increasing_number - 1):
-    #         temp_case = np.concatenate((copy_case, np.expand_dims(all_Target[j], axis=0)), axis=0)
-    #         copy_lists.append(temp_case)
-    #
-    #     copy_arrays = np.array(copy_lists)
-    #     rand_tar_case = np.concatenate((np.expand_dims(case[i], axis=0), copy_arrays), axis=0)
-    #     all_case = np.concatenate((all_case, rand_tar_case), axis=0)
-    # case = all_case[1:case.shape[0] * tar_increasing_number + 1, :, :]
-    # print(case.shape)
-    #
-    # # if rand_sam_num == 1:
-    # #     case = np.concatenate((origin_case, case), axis=0)
-    # print(case.shape)
-    #
 
     # <각종 데이터 저장>--------------------------------------------------------------------
     # 저장 폴더 만들기

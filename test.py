@@ -9,37 +9,44 @@ import pandas as pd
 import functions_my_1_2_1 as fmy
 import vtk
 import functions_vtk as fvtk
+import Augmentation_1_2_1 as Aug
 
 
-# a = np.arange(-45, 45).reshape(5, 2, 3, 3)
-# b = np.arange(0, 60).reshape(5, 4, 3)
-# print(a[0].shape)
-# print(b[0].shape)
-# c = np.dot(b[0], a[0])
-# print(c)
-# print(c.shape)
-# exit()
-# Rendering camera 관련
-position = 20
+with open(f'./data/data1/data_information.pkl', 'rb') as file:
+    target_data, bone1_data, bone2_data, skin_data = dill.load(file)
+print(target_data)
 
-"""
-# render 카메리 상세 설정시(work_find_rendering_camera 에서 수치 추출 가능)
-size_x = 250
-size_y = 250
-clip_x = 437.48541978551657
-clip_y = 832.9353965694179
-Dist = 622.2508231247085
-foc_x = -6.5353582725359445
-foc_y = -34.446804088366704
-foc_z = 15.888225067695487
-pos_x = -28.334831438062928
-pos_y = -653.3622452313335
-pos_z = 76.42372344583254
-Thick = 395.4499767839013
-VU_x = 0.033045448043591226
-VU_y = -0.09844414645719703
-VU_z = -0.9945937604830992
-"""
+offset = fmy.make_trans_offset(54, 20, [-5., 5.], [-5., 5.], [-5., 5.])
+print(np.array(offset).shape)
+
+target_data.translate(offset, 20)
+print(target_data)
+
+temp_list = []
+all_b1b2s_data = [bone1_data, bone2_data, skin_data]
+for data in all_b1b2s_data:
+    temp_list.append(data.data_vertices_list)
+temp_array = np.concatenate(temp_list, axis=1)
+print(temp_array.shape)
+print(temp_array[0].shape)
+
+aaa = []
+for i in range(54):
+    temp_array2 = np.tile(temp_array[i], [20, 1, 1])
+    multi_tar = np.array(target_data.data_vertices_list)[0+20*i: 20+20*i, :, :]
+    multi_data = np.concatenate((temp_array2, multi_tar), axis=1)
+    aaa.append(multi_data)
+result = np.concatenate(aaa, axis=0)
+print(result.shape)
+print(result[0][0], result[0][1900])
+print(result[19][0], result[19][1900])
+print(result[20][0], result[20][1900])
+print(result[39][0], result[39][1900])
+
+exit()
+
+
+
 
 # point vertex size
 point_size1 = 10
