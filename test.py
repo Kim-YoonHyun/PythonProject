@@ -12,37 +12,9 @@ import functions_vtk as fvtk
 import Augmentation_1_2_1 as Aug
 
 
-with open(f'./data/data1/data_information.pkl', 'rb') as file:
-    target_data, bone1_data, bone2_data, skin_data = dill.load(file)
-print(target_data)
-
-offset = fmy.make_trans_offset(54, 20, [-5., 5.], [-5., 5.], [-5., 5.])
-print(np.array(offset).shape)
-
-target_data.translate(offset, 20)
-print(target_data)
-
-temp_list = []
-all_b1b2s_data = [bone1_data, bone2_data, skin_data]
-for data in all_b1b2s_data:
-    temp_list.append(data.data_vertices_list)
-temp_array = np.concatenate(temp_list, axis=1)
-print(temp_array.shape)
-print(temp_array[0].shape)
-
-aaa = []
-for i in range(54):
-    temp_array2 = np.tile(temp_array[i], [20, 1, 1])
-    multi_tar = np.array(target_data.data_vertices_list)[0+20*i: 20+20*i, :, :]
-    multi_data = np.concatenate((temp_array2, multi_tar), axis=1)
-    aaa.append(multi_data)
-result = np.concatenate(aaa, axis=0)
-print(result.shape)
-print(result[0][0], result[0][1900])
-print(result[19][0], result[19][1900])
-print(result[20][0], result[20][1900])
-print(result[39][0], result[39][1900])
-
+a = np.arange(0, 30).reshape([5, 2, 3]).tolist()
+print(len(a))
+print()
 exit()
 
 

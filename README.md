@@ -1,11 +1,11 @@
 # code 버전 정리
 ## 2021
 ### ver 1 (08.10 initial updated) 
-#### 1.2 (08.18 initial updated)
+#### ver 1.2 (08.18 initial updated)
 08.18
 - work14_8_1 업데이트. rotation 코딩 마무리 및 저장까지 전부 완료.
 - work13_5 업데이트. score계산 코드 단순화 완료.
-##### 1.2.1 (08.19 initial updated)
+##### ver 1.2.1 (08.19 initial updated)
 08.19
 - 파일 이름을 버전 값으로 변경.
 - work14_increasing_data_1_2_1
@@ -21,3 +21,13 @@
 
 08.23
 - multi target 생성 추가중
+
+#### ver 1.3 (08.25 initial updated)
+08.25
+- multi target 생성 추가중
+- work14_increasing_data_1_3 
+  - 함수, 변수, 코드 순서로 코드 구조 변경
+  - Augmentation_1_3 에 따라 num_of_data, num_of_data_points 관련 코드 전부 삭제
+- Augmentation_1_3  
+  - 함수 반복 실행시 기록이 되도록 status 에 += 으로 기록 계속 추가식으로 변경
+  - num_of_data, num_of_data_point 인스턴스 변수 삭제
