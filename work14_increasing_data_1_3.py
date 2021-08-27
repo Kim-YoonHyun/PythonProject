@@ -172,6 +172,7 @@ def main():
                 else:
                     continue
     target_data.up_sam_status = 'disc to target'
+    target_data.array_size = np.array(target_data.data_vertices_list)
 
     print(f'{"target data is updated":>22s}')
     print(f"{'bone1 data is updated':>22s}")
@@ -239,7 +240,6 @@ def main():
 
     # <multi target>----------------------------------------------------
     if num_of_multi_target > 1:
-
         mul_tar_offset = make_trans_offset(len(target_data.data_vertices_list), num_of_multi_target, mtar_x, mtar_y, mtar_z)
         target_data.translate(mul_tar_offset, num_of_multi_target)
         # 각 input data에 multi target 적용
@@ -254,39 +254,12 @@ def main():
     else:
         input_data = data_concatenate(input_data_except_target, target_data.data_vertices_list)
 
-    print(input_data.shape)
     print_data_information(target_data, bone1_data, bone2_data, skin_data)
-    exit()
-
-
-
-    # <data 정리>------------------------------------------------------------
-    all_data = [target_data, bone1_data, bone2_data, skin_data]
-    array_size_list, data_name_list = [], []
-    up_sam_status_list, rand_sam_status_list, trans_status_list, rot_status_list = [], [], [], []
-    all_data_vertices_list = []
-
-    for data in all_data:
-        # num_of_data_list.append(data.num_of_data)
-        # num_of_data_point_list.append(data.num_of_data_points)
-        array_size_list.append(np.array(data.data_vertices_list).shape)
-        data_name_list.append(data.data_name)
-        up_sam_status_list.append(data.up_sam_status)
-        rand_sam_status_list.append(data.rand_sam_status)
-        trans_status_list.append(data.trans_status)
-        rot_status_list.append(data.rot_status)
-        all_data_vertices_list.append(np.array(data.data_vertices_list))
-
-    df = pd.DataFrame({
-        'shape': array_size_list,
-        'up sam 상태': up_sam_status_list, 'rand sam 상태': rand_sam_status_list, 'trans 상태': trans_status_list,
-        'rot 상태': rot_status_list
-    }, index=data_name_list)
-    df.index.name = '이름'
-    print(df)
-
-    input_data = np.concatenate(all_data_vertices_list, axis=1)
     print(f'input data size: {input_data.shape}')
+
+    all_data = [target_data, bone1_data, bone2_data, skin_data]
+    all_data_df = pd.DataFrame([target_data.__dict__, bone1_data.__dict__, bone2_data.__dict__, skin_data.__dict__])
+    all_data_df.drop(columns='data_vertices_list', inplace=True)
 
     # <각종 데이터 저장>--------------------------------------------------------------------
     # 저장 폴더 만들기
@@ -300,7 +273,7 @@ def main():
         dill.dump(all_data, file)
 
     # csv 저장
-    df.to_csv(f'{data_save_path}/data_information.csv', encoding='utf-8-sig')
+    all_data_df.to_csv(f'{data_save_path}/data_information.csv', encoding='utf-8-sig')
 
     # npy 저장
     np.save(f'{data_save_path}/input_data', input_data)
@@ -311,20 +284,7 @@ def main():
         file.write(f'이 데이터는 stl set{first_stl_set_num} 부터 {last_stl_set_num} 까지,\n'
                    f'총 {last_stl_set_num - first_stl_set_num + 1}개 로 만들어진 data 입니다.')
     exit()
-    # file = open(f'./data/data{max_data_num}/information.txt', 'w', encoding='utf8')
-    # line = f"set range : {first_set_num} ~ {last_set_num}, total {last_set_num - first_set_num + 1} sets\n\n" \
-    #     f"number of Skin point : {int(skin_points/rand_sam_num)}\n" \
-    #     f"size of Bone1 : {int(Bone1_points/rand_sam_num)}\n" \
-    #     f"size of Bone2 : {int(Bone2_points/rand_sam_num)}\n\n" \
-    #     f"< increasing process >\n" \
-    #     f"(translate {trans_increasing_number}) X (rotation {rot_increasing_number}) X (up random {rand_sam_num})\n" \
-    #     f"number of random target : {tar_increasing_number}\n\n" \
-    #     f"number of data : {case.shape[0]}\n\n"
-    # file.write(line)
-    # print('\n\n추가 정보 기입')
-    # string = str(input())
-    # file.write(f'추가 정보: {string}')
-    # file.close()
+
 
 # global parameter
 # A. stl 파일 불러오기. 현재 사용 중인 set 은 32번 부터이다.

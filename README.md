@@ -31,3 +31,11 @@
 - Augmentation_1_3  
   - 함수 반복 실행시 기록이 되도록 status 에 += 으로 기록 계속 추가식으로 변경
   - num_of_data, num_of_data_point 인스턴스 변수 삭제
+
+08.27
+- functions_my_1_3
+  - 공통 함수 외에 전부 삭제
+- work14_increasing_data_1_3 
+  - 전체 수정 완료.
+- Augmentation_1_3 
+  - 전체 수정 완료.

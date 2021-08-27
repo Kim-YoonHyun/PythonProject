@@ -19,10 +19,11 @@ class DataInformation:
         self.trans_status = ''
         self.rot_status = ''
         DataInformation.num += 1
+        self.array_size = np.array(self.data_vertices_list).shape
 
     def __str__(self):
         return f'<{self.data_name}>\n' \
-               f'array size: {np.array(self.data_vertices_list).shape}\n' \
+               f'array size: {self.array_size}\n' \
                f'up sample:{self.up_sam_status}\n' \
                f'random sample:{self.rand_sam_status}\n' \
                f'translate:{self.trans_status}\n' \
@@ -53,6 +54,7 @@ class DataInformation:
             print(np.array(data).shape)
         print()
         self.up_sam_status = up_num_of_stl_points
+        self.array_size = np.array(self.data_vertices_list).shape
 
     def random_sampling(self, up_num_of_stl_points, num_of_rand_sam):
         """
@@ -76,6 +78,7 @@ class DataInformation:
         print()
         self.data_vertices_list = ran_sam_vertices_list
         self.rand_sam_status += f' rand/{num_of_rand_sam}'
+        self.array_size = np.array(self.data_vertices_list).shape
 
     def translate(self, xyz_offset, num_of_trans):
         """
@@ -97,6 +100,7 @@ class DataInformation:
         print()
         self.data_vertices_list = result_vertices
         self.trans_status += f' transX{num_of_trans}'
+        self.array_size = np.array(self.data_vertices_list).shape
 
     def rotation(self, num_of_rot, xyz_rot_matrices):
         """
@@ -129,4 +133,4 @@ class DataInformation:
         print()
         self.data_vertices_list = all_result_vertices.tolist()
         self.rot_status += f' rotX{num_of_rot}'
-
+        self.array_size = np.array(self.data_vertices_list).shape
