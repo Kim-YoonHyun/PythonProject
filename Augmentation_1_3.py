@@ -3,7 +3,7 @@
 # num_of_data, num_of_data_point 인스턴스 변수 삭제
 
 import numpy as np
-import functions_my_1_2_1 as fmy
+import functions_my_1_3 as fmy
 import copy
 import random
 
