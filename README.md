@@ -43,3 +43,11 @@
 08.31
 - augmentation 과정을 stack 처리하는 ver 1.3.1 변경과정에서 문제발생해서 전부 리셋
 - 모든 파일 변경 사항 없음
+- 
+##### ver 1.3.1 (09.01 initial updated)
+09.01
+- work14_increasing_1_3_1
+  - 전역변수를 전부 대문자로 변경
+  - all_data 리스트를 초기에 만들어서 진행. []의 경우 업데이트가 상호적용되는 것을 확인 가능하였음
+- Augmentation_1_3_1
+  - self.array_size 삭제 및 자체 계산 방식으로 변경

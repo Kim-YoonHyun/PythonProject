@@ -6,15 +6,18 @@ import time
 import dill
 import math
 import pandas as pd
-import functions_my_1_2_1 as fmy
+import functions_my_1_3 as fmy
 import vtk
 import functions_vtk as fvtk
-import Augmentation_1_2_1 as Aug
+import Augmentation_1_3 as Aug
 
 
-a = np.arange(0, 30).reshape([5, 2, 3]).tolist()
-print(len(a))
-print()
+a = [3, 4]
+b = [5, 6]
+c = [a, b]
+print(c)
+a.append(7)
+print(c)
 exit()
 
 

@@ -36,18 +36,25 @@
 # _1_3 
 # 함수, 변수, 코드 순서로 코드 구조 변경
 # Augmentation_1_3 에 따라 num_of_data, num_of_data_points 관련 코드 전부 삭제
+# _1_3_1
+# 전역변수를 전부 대문자로 변경
+# all_data 리스트를 초기에 만들어서 진행. []의 경우 업데이트가 상호적용되는 것을 확인 가능하였음
 
 import numpy as np
 import os
-# import functions_my_1_2_1 as fmy
 import random
 import dill  # _7
 import pandas as pd  # _8
-import Augmentation_1_3 as Aug
+import Augmentation_1_3_1 as Aug
 import warnings
 import vtk
 import math
 warnings.filterwarnings(action='ignore')
+
+
+def print_data_information(*args):
+    for data in args:
+        print(data, '\n')
 
 
 def read_stl(path, stl_name):
@@ -66,18 +73,16 @@ def read_stl(path, stl_name):
         list(file_data.GetOutput().GetPoint(i)) for i in range(num_of_stl_points)
     )
     return stl_vertices_list, num_of_stl_points
-
-
-def make_trans_offset(num_of_data, num_of_trans, trans_x, trans_y, trans_z):
-    xyz_offset = [
-        [
-            [round(random.uniform(trans_x[0], trans_x[1]), 5),
-             round(random.uniform(trans_y[0], trans_y[1]), 5),
-             round(random.uniform(trans_z[0], trans_z[1]), 5)] for _ in range(num_of_trans)
-        ] for i in range(num_of_data)
-    ]
-    # xyz_offset = np.expand_dims(np.array(xyz_offset), axis=2)
-    return xyz_offset
+def data_vertices_extraction(path, start_num, last_num):
+    data_vertices_collection = []
+    for stl_set_num in range(start_num, last_num + 1):
+        file_list = os.listdir(f'{path}/set{stl_set_num}')
+        for file_name in file_list:
+            if '.stl' in file_name:
+                stl_name = file_name.split('.')[-2]
+                stl_vertices_list, _ = read_stl(f'{path}/set{stl_set_num}', stl_name)
+                data_vertices_collection.append(stl_vertices_list)
+    return data_vertices_collection
 
 
 def disc_to_target(stl_vertices_list):
@@ -89,23 +94,33 @@ def disc_to_target(stl_vertices_list):
     return target_vertex_array.tolist()
 
 
-def make_rot_matrices(num_of_data, num_of_rot, rot_x, rot_y, rot_z):
+def make_trans_offset(num_of_data, NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z):
+    xyz_offset = [
+        [
+            [round(random.uniform(TRANS_X[0], TRANS_X[1]), 5),
+             round(random.uniform(TRANS_Y[0], TRANS_Y[1]), 5),
+             round(random.uniform(TRANS_Z[0], TRANS_Z[1]), 5)] for _ in range(NUM_OF_TRANS)
+        ] for i in range(num_of_data)
+    ]
+    # xyz_offset = np.expand_dims(np.array(xyz_offset), axis=2)
+    return xyz_offset
+def make_rot_matrices(num_of_data, NUM_OF_ROT, ROT_X, ROT_Y, ROT_Z):
     """
     point cloud에 회전을 적용하기 위한 matrix를 계산하는 함수.
     :param num_of_data: 회전을 적용할 데이터의 갯수
-    :param num_of_rot: 회전을 통해 늘릴 데이터 배수
-    :param rot_x: x 축으로 회전을 적용할 범위
-    :param rot_y: y 축으로 회전을 적용할 범위
-    :param rot_z: z 축으로 회전을 적용할 범위
-    :return: (num_of_data, num_of_rot, 3, 3)
+    :param NUM_OF_ROT: 회전을 통해 늘릴 데이터 배수
+    :param ROT_X: x 축으로 회전을 적용할 범위
+    :param ROT_Y: y 축으로 회전을 적용할 범위
+    :param ROT_Z: z 축으로 회전을 적용할 범위
+    :return: (num_of_data, NUM_OF_ROT, 3, 3)
     """
     all_rot_matrices = []
     for j in range(num_of_data):
         xyz_rot_matrix = []
-        for i in range(num_of_rot):
-            x_angle = random.uniform(rot_x[0], rot_x[1]) * (math.pi / 180)
-            y_angle = random.uniform(rot_y[0], rot_y[1]) * (math.pi / 180)
-            z_angle = random.uniform(rot_z[0], rot_z[1]) * (math.pi / 180)
+        for i in range(NUM_OF_ROT):
+            x_angle = random.uniform(ROT_X[0], ROT_X[1]) * (math.pi / 180)
+            y_angle = random.uniform(ROT_Y[0], ROT_Y[1]) * (math.pi / 180)
+            z_angle = random.uniform(ROT_Z[0], ROT_Z[1]) * (math.pi / 180)
             x_matrix = np.array([
                 [1., 0., 0.],
                 [0., math.cos(x_angle), -math.sin(x_angle)],
@@ -125,11 +140,6 @@ def make_rot_matrices(num_of_data, num_of_rot, rot_x, rot_y, rot_z):
     return all_rot_matrices
 
 
-def print_data_information(*args):
-    for data in args:
-        print(data, '\n')
-
-
 def data_concatenate(*args):
     concat_data = []
     for arg in args:
@@ -139,97 +149,75 @@ def data_concatenate(*args):
 
 
 def main():
-    global first_stl_set_num, last_stl_set_num, up_num_of_skin_points, up_num_of_bone1_points, up_num_of_bone2_points, num_of_rand_sam
-    global num_of_trans, trans_x, trans_y, trans_z, num_of_rot, rot_x, rot_y, rot_z, mtar_x, mtar_y, mtar_z, num_of_multi_target
-
-    # set 번호 범위 지정
-    stl_set_path = f'stl/'
+    global FIRST_STL_SET_NUM, LAST_STL_SET_NUM, UP_NUM_OF_SKIN_POINTS, UP_NUM_OF_BONE1_POINTS, UP_NUM_OF_BONE2_POINTS, NUM_OF_RAND_NUM
+    global NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z, NUM_OF_ROT, ROT_X, ROT_Y, ROT_Z, MTAR_X, MTAR_Y, MTAR_Z, NUM_OF_MULTI_TARGET
 
     # 각 데이터별 class 세팅
     target_data = Aug.DataInformation('target')
     bone1_data = Aug.DataInformation('bone1')
     bone2_data = Aug.DataInformation('bone2')
     skin_data = Aug.DataInformation('skin')
-    Aug.DataInformation.aaa = 1
+    all_data = [target_data, bone1_data, bone2_data, skin_data]
+    print_data_information(target_data, bone1_data, bone2_data, skin_data)
 
     # <초기 데이터 불러오기> ------------------------------------------------------------
-    for stl_set_num in range(first_stl_set_num, last_stl_set_num + 1):
-        file_list = os.listdir(f'{stl_set_path}/set{stl_set_num}')
-        bone_flag = 1
-        for file_name in file_list:
-            if '.stl' in file_name:
-                stl_name = file_name.split('.')[-2]
-                stl_vertices_list, num_of_stl_points = read_stl(f'{stl_set_path}/set{stl_set_num}', stl_name)
-                if stl_name[0] == 'D':
-                    target_data.data_vertices_list.append(disc_to_target(stl_vertices_list))
-                elif stl_name[0] == 'L' and bone_flag == 1:
-                    bone1_data.data_vertices_list.append(stl_vertices_list)
-                    bone_flag += 1
-                elif stl_name[0] == 'L' and bone_flag == 2:
-                    bone2_data.data_vertices_list.append(stl_vertices_list)
-                elif stl_name[0] == 'S':
-                    skin_data.data_vertices_list.append(stl_vertices_list)
-                else:
-                    continue
-    target_data.up_sam_status = 'disc to target'
-    target_data.array_size = np.array(target_data.data_vertices_list)
-
-    print(f'{"target data is updated":>22s}')
-    print(f"{'bone1 data is updated':>22s}")
-    print(f"{'bone2 data is updated':>22s}")
-    print(f"{'skin data is updated':>22s}", '\n')
-
+    data_vertices_collection = data_vertices_extraction(f'stl/', FIRST_STL_SET_NUM, LAST_STL_SET_NUM)
+    print('data update...')
+    for idx, data in enumerate(data_vertices_collection):
+        if idx % 4 == 0:
+            data = disc_to_target(data)
+        all_data[idx % 4].data_vertices_list.append(data)
     print_data_information(target_data, bone1_data, bone2_data, skin_data)
 
     # < up sampling > -----------------------------------------------------------
     print('up sampling...')
-    bone1_data.up_sampling(up_num_of_bone1_points)
-    bone2_data.up_sampling(up_num_of_bone2_points)
-    skin_data.up_sampling(up_num_of_skin_points)
+    bone1_data.up_sampling(UP_NUM_OF_BONE1_POINTS)
+    bone2_data.up_sampling(UP_NUM_OF_BONE2_POINTS)
+    skin_data.up_sampling(UP_NUM_OF_SKIN_POINTS)
 
     # <random sampling> -----------------------------------------------------------
     print('random sampling...')
     target_data.data_vertices_list = [
-        np.tile(np.array(target_data.data_vertices_list)[i], [num_of_rand_sam, 1, 1])[j].tolist()
+        np.tile(np.array(target_data.data_vertices_list)[i], [NUM_OF_RAND_NUM, 1, 1])[j].tolist()
         for i in range(len(target_data.data_vertices_list))
-        for j in range(num_of_rand_sam)
+        for j in range(NUM_OF_RAND_NUM)
     ]
-    target_data.rand_sam_status = f'copyX{num_of_rand_sam}'
-    bone1_data.random_sampling(up_num_of_bone1_points, num_of_rand_sam)
-    bone2_data.random_sampling(up_num_of_bone2_points, num_of_rand_sam)
-    skin_data.random_sampling(up_num_of_skin_points, num_of_rand_sam)
+    target_data.rand_sam_status = f'copyX{NUM_OF_RAND_NUM}'
+    bone1_data.random_sampling(UP_NUM_OF_BONE1_POINTS, NUM_OF_RAND_NUM)
+    bone2_data.random_sampling(UP_NUM_OF_BONE2_POINTS, NUM_OF_RAND_NUM)
+    skin_data.random_sampling(UP_NUM_OF_SKIN_POINTS, NUM_OF_RAND_NUM)
 
     print_data_information(target_data, bone1_data, bone2_data, skin_data)
 
     # <translate> -----------------------------------------------------------
-    if num_of_trans > 1:
+    if NUM_OF_TRANS > 1:
         print('translate...')
         # make trans offset
-        target_trans_offset = make_trans_offset(len(target_data.data_vertices_list), num_of_trans, trans_x, trans_y, trans_z)
-        bone_trans_offset = make_trans_offset(len(bone1_data.data_vertices_list), num_of_trans, trans_x, trans_y, trans_z)
-        skin_trans_offset = make_trans_offset(len(skin_data.data_vertices_list), num_of_trans, trans_x, trans_y, trans_z)
+        target_trans_offset = make_trans_offset(len(target_data.data_vertices_list), NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z)
+        bone_trans_offset = make_trans_offset(len(bone1_data.data_vertices_list), NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z)
+        skin_trans_offset = make_trans_offset(len(skin_data.data_vertices_list), NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z)
 
         # translate
-        target_data.translate(target_trans_offset, num_of_trans)
-        bone1_data.translate(bone_trans_offset, num_of_trans)
-        bone2_data.translate(bone_trans_offset, num_of_trans)
-        skin_data.translate(skin_trans_offset, num_of_trans)
+        target_data.translate(target_trans_offset, NUM_OF_TRANS)
+        bone1_data.translate(bone_trans_offset, NUM_OF_TRANS)
+        bone2_data.translate(bone_trans_offset, NUM_OF_TRANS)
+        skin_data.translate(skin_trans_offset, NUM_OF_TRANS)
     else:
         print(f'not translate')
 
     # < rotation > ------------------------------------------------
-    if num_of_rot > 1:
+    if NUM_OF_ROT > 1:
         print('rotation...')
         # rotation matrix
-        target_rot_matrix = make_rot_matrices(len(target_data.data_vertices_list), num_of_rot, rot_x, rot_y, rot_z)
-        bone_rot_matrix = make_rot_matrices(len(bone1_data.data_vertices_list), num_of_rot, rot_x, rot_y, rot_z)
-        skin_rot_matrix = make_rot_matrices(len(skin_data.data_vertices_list), num_of_rot, rot_x, rot_y, rot_z)
+        target_rot_matrix = make_rot_matrices(len(target_data.data_vertices_list), NUM_OF_ROT, ROT_X, ROT_Y, ROT_Z)
+        bone_rot_matrix = make_rot_matrices(len(bone1_data.data_vertices_list), NUM_OF_ROT, ROT_X, ROT_Y, ROT_Z)
+        skin_rot_matrix = make_rot_matrices(len(skin_data.data_vertices_list), NUM_OF_ROT, ROT_X, ROT_Y, ROT_Z)
 
         # rotation
-        target_data.rotation(num_of_rot, target_rot_matrix)
-        bone1_data.rotation(num_of_rot, bone_rot_matrix)
-        bone2_data.rotation(num_of_rot, bone_rot_matrix)
-        skin_data.rotation(num_of_rot, skin_rot_matrix)
+        target_data.rotation(NUM_OF_ROT, target_rot_matrix)
+        bone1_data.rotation(NUM_OF_ROT, bone_rot_matrix)
+        bone2_data.rotation(NUM_OF_ROT, bone_rot_matrix)
+        skin_data.rotation(NUM_OF_ROT, skin_rot_matrix)
     else:
         print('not rotation')
 
@@ -239,15 +227,15 @@ def main():
                                                 skin_data.data_vertices_list)
 
     # <multi target>----------------------------------------------------
-    if num_of_multi_target > 1:
-        mul_tar_offset = make_trans_offset(len(target_data.data_vertices_list), num_of_multi_target, mtar_x, mtar_y, mtar_z)
-        target_data.translate(mul_tar_offset, num_of_multi_target)
+    if NUM_OF_MULTI_TARGET > 1:
+        mul_tar_offset = make_trans_offset(len(target_data.data_vertices_list), NUM_OF_MULTI_TARGET, MTAR_X, MTAR_Y, MTAR_Z)
+        target_data.translate(mul_tar_offset, NUM_OF_MULTI_TARGET)
         # 각 input data에 multi target 적용
         multi_data_list = []
         for i in range(len(bone1_data.data_vertices_list)):
-            tile_all_data_except_target = np.tile(input_data_except_target[i], [num_of_multi_target, 1, 1])
+            tile_all_data_except_target = np.tile(input_data_except_target[i], [NUM_OF_MULTI_TARGET, 1, 1])
             multi_tar = np.array(target_data.data_vertices_list)[
-                        0 + num_of_multi_target * i:num_of_multi_target * (1 + i), :, :]
+                        0 + NUM_OF_MULTI_TARGET * i:NUM_OF_MULTI_TARGET * (1 + i), :, :]
             multi_data = np.concatenate((tile_all_data_except_target, multi_tar), axis=1)
             multi_data_list.append(multi_data)
         input_data = np.concatenate(multi_data_list, axis=0)
@@ -256,10 +244,6 @@ def main():
 
     print_data_information(target_data, bone1_data, bone2_data, skin_data)
     print(f'input data size: {input_data.shape}')
-
-    all_data = [target_data, bone1_data, bone2_data, skin_data]
-    all_data_df = pd.DataFrame([target_data.__dict__, bone1_data.__dict__, bone2_data.__dict__, skin_data.__dict__])
-    all_data_df.drop(columns='data_vertices_list', inplace=True)
 
     # <각종 데이터 저장>--------------------------------------------------------------------
     # 저장 폴더 만들기
@@ -273,49 +257,51 @@ def main():
         dill.dump(all_data, file)
 
     # csv 저장
+    all_data_df = pd.DataFrame([target_data.__dict__, bone1_data.__dict__, bone2_data.__dict__, skin_data.__dict__])
+    all_data_df.drop(columns='data_vertices_list', inplace=True)
     all_data_df.to_csv(f'{data_save_path}/data_information.csv', encoding='utf-8-sig')
 
     # npy 저장
     np.save(f'{data_save_path}/input_data', input_data)
 
     # txt 저장
-    with open(f'{data_save_path}/stl set range = {first_stl_set_num} ~ {last_stl_set_num}.txt', 'w',
+    with open(f'{data_save_path}/stl set range = {FIRST_STL_SET_NUM} ~ {LAST_STL_SET_NUM}.txt', 'w',
               encoding='utf8') as file:
-        file.write(f'이 데이터는 stl set{first_stl_set_num} 부터 {last_stl_set_num} 까지,\n'
-                   f'총 {last_stl_set_num - first_stl_set_num + 1}개 로 만들어진 data 입니다.')
+        file.write(f'이 데이터는 stl set{FIRST_STL_SET_NUM} 부터 {LAST_STL_SET_NUM} 까지,\n'
+                   f'총 {LAST_STL_SET_NUM - FIRST_STL_SET_NUM + 1}개 로 만들어진 data 입니다.')
     exit()
 
 
 # global parameter
 # A. stl 파일 불러오기. 현재 사용 중인 set 은 32번 부터이다.
-first_stl_set_num = 32  # 불러올 set 의 시작 번호
-last_stl_set_num = 33  # 불러올 set 의 마지막 번호
+FIRST_STL_SET_NUM = 32  # 불러올 set 의 시작 번호
+LAST_STL_SET_NUM = 33  # 불러올 set 의 마지막 번호
 
 # C. up sampling
-up_num_of_skin_points = 2700  # 증가시킬 skin 의 point 갯수
-up_num_of_bone1_points = 1500  # 증가시킬 Bone1 의 point 갯수
-up_num_of_bone2_points = 1500  # 증가시킬 Bone2 의 point 갯수
+UP_NUM_OF_SKIN_POINTS = 2700  # 증가시킬 skin 의 point 갯수
+UP_NUM_OF_BONE1_POINTS = 1500  # 증가시킬 Bone1 의 point 갯수
+UP_NUM_OF_BONE2_POINTS = 1500  # 증가시킬 Bone2 의 point 갯수
 
 # random sampling
-num_of_rand_sam = 3
+NUM_OF_RAND_NUM = 3
 
 # B. Augmentation: translate
-num_of_trans = 3  # translate 를 통해 증가시킬 배수
-trans_x = [-3.0, 3.0]  # x 축에 대한 최대 translate 범위
-trans_y = [-3.0, 3.0]  # y 축에 대한 최대 translate 범위
-trans_z = [-3.0, 3.0]  # z 축에 대한 최대 translate 범위
+NUM_OF_TRANS = 3  # translate 를 통해 증가시킬 배수
+TRANS_X = [-3.0, 3.0]  # x 축에 대한 최대 translate 범위
+TRANS_Y = [-3.0, 3.0]  # y 축에 대한 최대 translate 범위
+TRANS_Z = [-3.0, 3.0]  # z 축에 대한 최대 translate 범위
 
 # B. Augmentation: rotation
-num_of_rot = 3  # rotation 을 통해 증가시킬 배수
-rot_x = [-5.0, 5.0]  # x 축에 대한 최대 rotation 범위
-rot_y = [-5.0, 5.0]  # y 축에 대한 최대 rotation 범위
-rot_z = [-5.0, 5.0]  # z 축에 대한 최대 rotation 범위
+NUM_OF_ROT = 3  # rotation 을 통해 증가시킬 배수
+ROT_X = [-5.0, 5.0]  # x 축에 대한 최대 rotation 범위
+ROT_Y = [-5.0, 5.0]  # y 축에 대한 최대 rotation 범위
+ROT_Z = [-5.0, 5.0]  # z 축에 대한 최대 rotation 범위
 
 # D. 랜덤 타겟 생성
-mtar_x = [-18.0, 18.0]
-mtar_y = [-3.0, 7.0]
-mtar_z = [-2.0, 2.0]
-num_of_multi_target = 5
+MTAR_X = [-18.0, 18.0]
+MTAR_Y = [-3.0, 7.0]
+MTAR_Z = [-2.0, 2.0]
+NUM_OF_MULTI_TARGET = 5
 
 
 if __name__ == '__main__':
