@@ -49,5 +49,18 @@
 - work14_increasing_1_3_1
   - 전역변수를 전부 대문자로 변경
   - all_data 리스트를 초기에 만들어서 진행. []의 경우 업데이트가 상호적용되는 것을 확인 가능하였음
-- Augmentation_1_3_1
-  - self.array_size 삭제 및 자체 계산 방식으로 변경
+  
+09.02
+- work14_increasing_1_3_1
+  - 전역변수를 전부 대문자로 변경
+  - all_data 리스트를 초기에 만들어서 진행. []의 경우 업데이트가 상호적용되는 것을 확인 가능하였음
+  - 현재버전값 저장 추가
+  - 버전에 따른 저장방식 설정 추가
+  - Augmentation_1_3_1 을 병합
+  - Augmentation_1_3_1 을 가져옴
+- Augmentation_1_3_1(삭제)
+  - work14_increasing_1_3_1 으로 병합됨
+- work13_calculate_score_1_3_1
+  - 버전에 따른 추출 방식 적용 중
+
+  

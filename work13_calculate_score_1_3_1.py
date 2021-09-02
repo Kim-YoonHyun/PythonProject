@@ -17,18 +17,58 @@
 # pandas, class 등 추가 사용
 # data_list_title 함수 사용
 
+# 1_3_1
+# 버전에 따른 추출 방식 적용 중
+
+
 import numpy as np
 import time
 import os
 import dill
 import pandas as pd
-import functions_my_1_2_1 as fmy
+# import functions_my_1_3 as fmy
+
+def data_list_title(path):
+    """
+    class 객체를 불러와서 그 정보를 표시하는 함수
+    :param path: './data'
+    :return:
+    """
+    data_list = os.listdir(path)
+    for idx, data in enumerate(data_list):
+        array_size = np.load(f'{path}/{data}/input_data.npy').shape
+        with open(f'{path}/{data}/data_information.pkl', 'rb') as file:
+            _, bone1_data, _, _ = dill.load(file)
+
+        print(f'{data}: {array_size}, [{bone1_data.rand_sam_status}, {bone1_data.trans_status}, {bone1_data.rot_status}]')
+
+
+def euclidean_distance(start, end):
+    """
+    function of calculate the euclidean distance from start to end
+    :param start: start vertex
+    :param end: end vertex
+    :return: euclidean distance
+    """
+    value = np.sqrt(np.sum(np.square(np.subtract(start, end)), axis=-1))
+    return value
+
 
 if __name__ == '__main__':
+    input_data = np.load(f'data/data1/input_data.npy')
+    data_df = pd.read_csv(f'data/data1/data_information.csv')
+    print(data_df.columns)
+    print(data_df['array_size'].value_counts())
+    print(data_df['trans_status'].value_counts())
+    print(data_df['rot_status'].value_counts())
+    print(data_df['rand_sam_status'].value_counts())
+    string = f'rand / 3, trans X 3, rot X 3, multi target X 5'
+    exit()
     while True:
         # <title>------------------------------------------------------------
         # data list
-        fmy.data_list_title(f'./data')
+        data_list_title(f'./data')
+        exit()
         data_num = int(input('\n 계산할 데이터 번호 입력 > '))
         if data_num == 10000:
             break
@@ -49,7 +89,7 @@ if __name__ == '__main__':
             target_data, bone1_data, bone2_data, skin_data = dill.load(file)
 
         # Bone1 및 Bone2 와 L1 간의 모든 거리 중 최소값(L2와 가장 가까운 Bone 좌표)구하기(L2, L3)
-        L1 = fmy.euclidean_distance(start=skin_data.data_vertices_list, end=target_data.data_vertices_list)
+        L1 = euclidean_distance(start=skin_data.data_vertices_list, end=target_data.data_vertices_list)
         L2 = []
         L3 = []
         for idx, data in enumerate(input_data):

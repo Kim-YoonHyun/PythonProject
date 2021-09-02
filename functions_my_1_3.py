@@ -54,19 +54,7 @@ def calculate_point_to_line_length(center_array, start_array, target_array):
     return L
 
 
-def data_list_title(path):
-    """
-    class 객체를 불러와서 그 정보를 표시하는 함수
-    :param path: './data'
-    :return:
-    """
-    data_list = os.listdir(path)
-    for idx, data in enumerate(data_list):
-        array_size = np.load(f'{path}/{data}/input_data.npy').shape
-        with open(f'{path}/{data}/data_information.pkl', 'rb') as file:
-            _, bone1_data, _, _ = dill.load(file)
 
-        print(f'{data}: {array_size}, [{bone1_data.rand_sam_status}, {bone1_data.trans_status}, {bone1_data.rot_status}]')
 
 
 

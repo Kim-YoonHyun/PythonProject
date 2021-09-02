@@ -39,17 +39,158 @@
 # _1_3_1
 # 전역변수를 전부 대문자로 변경
 # all_data 리스트를 초기에 만들어서 진행. []의 경우 업데이트가 상호적용되는 것을 확인 가능하였음
+# 현재버전값 저장 추가
+# 버전에 따른 저장방식 설정 추가
+# Augmentation_1_3_1 을 병합
 
 import numpy as np
 import os
 import random
 import dill  # _7
 import pandas as pd  # _8
-import Augmentation_1_3_1 as Aug
+# import Augmentation_1_3_1 as Aug
 import warnings
 import vtk
 import math
+import re  # _1_3_1
+import copy
 warnings.filterwarnings(action='ignore')
+
+
+class DataInformation:
+    num = 0
+
+    def __init__(self, data_name):
+        self.data_name = data_name
+        self.data_vertices_list = []
+        self.up_sam_status = ''
+        self.rand_sam_status = ''
+        self.trans_status = ''
+        self.rot_status = ''
+
+        DataInformation.num += 1
+
+    def __str__(self):
+        return f'<{self.data_name}>\n' \
+               f'array size: {np.array(self.data_vertices_list).shape}\n' \
+               f'up sample:{self.up_sam_status}\n' \
+               f'random sample:{self.rand_sam_status}\n' \
+               f'translate:{self.trans_status}\n' \
+               f'rotation:{self.rot_status}'
+
+    def up_sampling(self, up_num_of_stl_points):
+        """
+        데이터 vertices의 갯수를 지정한 갯수만큼 추가 생성하는 함수
+        :param up_num_of_stl_points: 추가생성을 통해 달성할 목표 갯수
+        :return:
+        """
+        for data_index, data in enumerate(self.data_vertices_list):
+            print(f'data{data_index}: {np.array(data).shape} --->', end=' ')
+            # 추출용 copy vertices 생성
+            vertices_list_copy = copy.deepcopy(data)
+            num_of_data_points = np.array(data).shape[0]
+            for _ in range(up_num_of_stl_points - num_of_data_points):
+                # 랜덤으로 vertex 하나 추출
+                rand_vertex = vertices_list_copy.pop(random.randint(0, len(vertices_list_copy) - 1))
+                # 추출된 vertex 와 나머지 모든 vertex 간의 거리 계산
+                distance_of_rand_vertex_to_rest_vertices = euclidean_distance(rand_vertex, vertices_list_copy)
+                # 추출된 vertex 와 가장 가까운 vertex 선택
+                nearest_vertex = vertices_list_copy[np.argmin(distance_of_rand_vertex_to_rest_vertices)]
+                # 추출된 vertex 와 가장 가까운 vertex 의 중간지점에 새로운 vertex 생성
+                middle_vertex = list(np.average((np.array(rand_vertex), np.array(nearest_vertex)), axis=0))
+                # 생성된 새로운 vertex 를 기존 vertices 에 추가
+                data.append(middle_vertex)
+            print(np.array(data).shape)
+        print()
+        self.up_sam_status = up_num_of_stl_points
+
+    def random_sampling(self, up_num_of_stl_points, num_of_rand_sam):
+        """
+        :param up_num_of_stl_points:
+        :param num_of_rand_sam:
+        :return:
+        """
+        print(f'<{self.data_name}>')
+        ran_sam_vertices_list = []
+        for data_index, data in enumerate(self.data_vertices_list):
+            print(f'data{data_index}: {np.array(data).shape} --->', end=' ')
+            for _ in range(num_of_rand_sam):
+                temp_list = []
+                for _ in range(int(up_num_of_stl_points / num_of_rand_sam)):
+                    # 랜덤으로 vertex 하나 선택 후 추출
+                    rand_index = random.randint(0, len(data) - 1)
+                    temp_list.append(data.pop(rand_index))
+                # 목표치 만큼 추출된 vertices list 를 저장
+                ran_sam_vertices_list.append(temp_list)
+            print(f'{np.array(temp_list).shape} X {num_of_rand_sam}')
+        print()
+        self.data_vertices_list = ran_sam_vertices_list
+        self.rand_sam_status += f' rand/{num_of_rand_sam}'
+
+    def translate(self, xyz_offset, num_of_trans):
+        """
+        :param xyz_offset:
+        :param num_of_trans:
+        :return:
+        """
+        print(f'<{self.data_name}>')
+        print(f'data: {np.array(self.data_vertices_list).shape} --->', end=' ')
+        num_of_data = np.array(self.data_vertices_list).shape[0]
+        xyz_offset = np.expand_dims(np.array(xyz_offset), axis=-2)
+        temp_list = []
+        for i in range(num_of_data):
+            temp_list.append(np.add(self.data_vertices_list[i], xyz_offset[i]).tolist())
+
+        temp_list = [np.add(self.data_vertices_list[i], xyz_offset[i]).tolist() for i in range(num_of_data)]
+        result_vertices = np.concatenate(temp_list, axis=0).tolist()
+        print(f'{np.array(result_vertices).shape}')
+        print()
+        self.data_vertices_list = result_vertices
+        self.trans_status += f' transX{num_of_trans}'
+
+    def rotation(self, xyz_rot_matrices, num_of_rot):
+        """
+        :param xyz_rot_matrices:
+        :return:
+        """
+
+        num_of_data = np.array(self.data_vertices_list).shape[0]
+        center_vertex = np.average(np.array(self.data_vertices_list), axis=1)
+        temp_list = []
+        print(f'<{self.data_name}>')
+        print(f'data: {np.array(self.data_vertices_list).shape} --->', end=' ')
+        for i in range(num_of_data):
+            # 원점으로 옮기기
+            trans_to_zero_coordinate = np.subtract(np.array(self.data_vertices_list)[i], center_vertex[i])
+
+            # rotation
+            rot_vertices = np.dot(trans_to_zero_coordinate, xyz_rot_matrices[i])
+            rot_vertices_expanded = np.expand_dims(rot_vertices, axis=-2)
+            result_vertices_zero = np.concatenate((rot_vertices_expanded), axis=1)
+
+            # 원래 위치로 되돌리기
+            trans_to_origin_coordinate = np.add(result_vertices_zero, center_vertex[i])
+
+            # list 에 넣기
+            temp_list.append(trans_to_origin_coordinate)
+
+        all_result_vertices = np.concatenate(temp_list, axis=0)
+        print(f'{all_result_vertices.shape}')
+        print()
+        self.data_vertices_list = all_result_vertices.tolist()
+        self.rot_status += f' rotX{num_of_rot}'
+
+
+def euclidean_distance(start, end):
+    """
+    function of calculate the euclidean distance from start to end
+    :param start: start vertex
+    :param end: end vertex
+    :return: euclidean distance
+    """
+
+    value = np.sqrt(np.sum(np.square(np.subtract(start, end)), axis=-1))
+    return value
 
 
 def print_data_information(*args):
@@ -73,6 +214,8 @@ def read_stl(path, stl_name):
         list(file_data.GetOutput().GetPoint(i)) for i in range(num_of_stl_points)
     )
     return stl_vertices_list, num_of_stl_points
+
+
 def data_vertices_extraction(path, start_num, last_num):
     data_vertices_collection = []
     for stl_set_num in range(start_num, last_num + 1):
@@ -148,15 +291,28 @@ def data_concatenate(*args):
     return concat_data
 
 
+def extract_version():
+    name = os.path.basename(__file__)
+    name = re.sub('[_.]', ' ', name).split()
+    ver = ''
+    for word in name:
+        try:
+            ver_word = int(word)
+            ver += f'{ver_word}'
+        except:
+            pass
+    return '.'.join(ver)
+
+
 def main():
     global FIRST_STL_SET_NUM, LAST_STL_SET_NUM, UP_NUM_OF_SKIN_POINTS, UP_NUM_OF_BONE1_POINTS, UP_NUM_OF_BONE2_POINTS, NUM_OF_RAND_NUM
     global NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z, NUM_OF_ROT, ROT_X, ROT_Y, ROT_Z, MTAR_X, MTAR_Y, MTAR_Z, NUM_OF_MULTI_TARGET
 
     # 각 데이터별 class 세팅
-    target_data = Aug.DataInformation('target')
-    bone1_data = Aug.DataInformation('bone1')
-    bone2_data = Aug.DataInformation('bone2')
-    skin_data = Aug.DataInformation('skin')
+    target_data = DataInformation('target')
+    bone1_data = DataInformation('bone1')
+    bone2_data = DataInformation('bone2')
+    skin_data = DataInformation('skin')
     all_data = [target_data, bone1_data, bone2_data, skin_data]
     print_data_information(target_data, bone1_data, bone2_data, skin_data)
 
@@ -187,8 +343,6 @@ def main():
     bone2_data.random_sampling(UP_NUM_OF_BONE2_POINTS, NUM_OF_RAND_NUM)
     skin_data.random_sampling(UP_NUM_OF_SKIN_POINTS, NUM_OF_RAND_NUM)
 
-    print_data_information(target_data, bone1_data, bone2_data, skin_data)
-
     # <translate> -----------------------------------------------------------
     if NUM_OF_TRANS > 1:
         print('translate...')
@@ -214,10 +368,10 @@ def main():
         skin_rot_matrix = make_rot_matrices(len(skin_data.data_vertices_list), NUM_OF_ROT, ROT_X, ROT_Y, ROT_Z)
 
         # rotation
-        target_data.rotation(NUM_OF_ROT, target_rot_matrix)
-        bone1_data.rotation(NUM_OF_ROT, bone_rot_matrix)
-        bone2_data.rotation(NUM_OF_ROT, bone_rot_matrix)
-        skin_data.rotation(NUM_OF_ROT, skin_rot_matrix)
+        target_data.rotation(target_rot_matrix, NUM_OF_ROT)
+        bone1_data.rotation(bone_rot_matrix, NUM_OF_ROT)
+        bone2_data.rotation(bone_rot_matrix, NUM_OF_ROT)
+        skin_data.rotation(skin_rot_matrix, NUM_OF_ROT)
     else:
         print('not rotation')
 
@@ -235,7 +389,7 @@ def main():
         for i in range(len(bone1_data.data_vertices_list)):
             tile_all_data_except_target = np.tile(input_data_except_target[i], [NUM_OF_MULTI_TARGET, 1, 1])
             multi_tar = np.array(target_data.data_vertices_list)[
-                        0 + NUM_OF_MULTI_TARGET * i:NUM_OF_MULTI_TARGET * (1 + i), :, :]
+                        (NUM_OF_MULTI_TARGET * i):(NUM_OF_MULTI_TARGET * (i+1)), :, :]
             multi_data = np.concatenate((tile_all_data_except_target, multi_tar), axis=1)
             multi_data_list.append(multi_data)
         input_data = np.concatenate(multi_data_list, axis=0)
@@ -246,29 +400,31 @@ def main():
     print(f'input data size: {input_data.shape}')
 
     # <각종 데이터 저장>--------------------------------------------------------------------
+    # 현재 저장 데이터: pkl, csv, txt
     # 저장 폴더 만들기
     num_of_data_file = len(os.walk('./data/').__next__()[1])
     data_save_path = f'./data/data{num_of_data_file + 1}'
     if not os.path.isdir(f'{data_save_path}'):  # 해당 경로 내에 폴더가 없으면,
         os.makedirs(f'{data_save_path}')  # 그 폴더를 만들기
 
-    # class 객체 저장
+    # class 객체 저장 : 각 데이터별 인스턴스 정보
     with open(f'{data_save_path}/data_information.pkl', 'wb') as file:
         dill.dump(all_data, file)
 
-    # csv 저장
+    # csv 저장 : 각 데이터별 인스턴스 정보
     all_data_df = pd.DataFrame([target_data.__dict__, bone1_data.__dict__, bone2_data.__dict__, skin_data.__dict__])
-    all_data_df.drop(columns='data_vertices_list', inplace=True)
+    all_data_df.rename(columns={'data_vertices_list':'array_size'}, inplace=True)
+    all_data_df['array_size'] = all_data_df['array_size'].apply(lambda x: np.array(x).shape)
     all_data_df.to_csv(f'{data_save_path}/data_information.csv', encoding='utf-8-sig')
 
-    # npy 저장
+    # npy 저장 : 학습용 input data
     np.save(f'{data_save_path}/input_data', input_data)
 
-    # txt 저장
-    with open(f'{data_save_path}/stl set range = {FIRST_STL_SET_NUM} ~ {LAST_STL_SET_NUM}.txt', 'w',
+    # txt 저장 : 그외 기타 정보
+    with open(f'{data_save_path}/other_information.txt', 'w',
               encoding='utf8') as file:
-        file.write(f'이 데이터는 stl set{FIRST_STL_SET_NUM} 부터 {LAST_STL_SET_NUM} 까지,\n'
-                   f'총 {LAST_STL_SET_NUM - FIRST_STL_SET_NUM + 1}개 로 만들어진 data 입니다.')
+        file.write(f'stl set range: {FIRST_STL_SET_NUM} ~ {LAST_STL_SET_NUM}\n')
+        file.write(f'code current version: {extract_version()}')
     exit()
 
 
