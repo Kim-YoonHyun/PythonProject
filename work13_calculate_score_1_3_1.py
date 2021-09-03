@@ -20,6 +20,7 @@
 # 1_3_1
 # call_data_version, call_dataframe, call_other_information, call_data_title, call_data_class_information 함수 추가 20210903
 # calculate_point_to_line_length, abs_vector, euclidean_distance 함수를 옮겨옴 20210903
+# calculate_point_to_line_length 함수의 계산 시간 단축 필요 20210903
 
 import numpy as np
 import time

@@ -43,6 +43,8 @@
 # 버전에 따른 저장방식 설정 추가
 # Augmentation_1_3_1 을 병합
 # version.ver 파일 저장 추가 20210903
+# data_vertices_copy 함수 추가 20210903
+# multi target 생성시 복사 잘못되던 오류 해결 20210903
 
 import numpy as np
 import os
@@ -238,7 +240,11 @@ def disc_to_target(stl_vertices_list):
     target_vertex_array = np.expand_dims(stl_vertices_array_center, axis=0)
     return target_vertex_array.tolist()
 
-
+def data_vertices_copy(vertices, copy_num):
+    copied_vertices_list = []
+    for i in range(len(vertices)):
+        copied_vertices_list.append(np.tile(np.array(vertices)[i], [copy_num, 1, 1]).tolist())
+    return np.concatenate(copied_vertices_list, axis=0).tolist()
 def make_trans_offset(num_of_data, NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z):
     xyz_offset = [
         [
@@ -335,12 +341,10 @@ def main():
     skin_data.up_sampling(UP_NUM_OF_SKIN_POINTS)
 
     # <random sampling> -----------------------------------------------------------
+    print(np.array(target_data.data_vertices_list))
     print('random sampling...')
-    target_data.data_vertices_list = [
-        np.tile(np.array(target_data.data_vertices_list)[i], [NUM_OF_RAND_NUM, 1, 1])[j].tolist()
-        for i in range(len(target_data.data_vertices_list))
-        for j in range(NUM_OF_RAND_NUM)
-    ]
+
+    target_data.data_vertices_list = data_vertices_copy(target_data.data_vertices_list, NUM_OF_RAND_NUM)
     target_data.rand_sam_status = f'copy X{NUM_OF_RAND_NUM}'
     bone1_data.random_sampling(UP_NUM_OF_BONE1_POINTS, NUM_OF_RAND_NUM)
     bone2_data.random_sampling(UP_NUM_OF_BONE2_POINTS, NUM_OF_RAND_NUM)
@@ -387,22 +391,15 @@ def main():
     if NUM_OF_MULTI_TARGET > 1:
         mul_tar_offset = make_trans_offset(len(target_data.data_vertices_list), NUM_OF_MULTI_TARGET, MTAR_X, MTAR_Y, MTAR_Z)
         target_data.translate(mul_tar_offset, NUM_OF_MULTI_TARGET, 'on')
+        bone1_data.data_vertices_list = data_vertices_copy(bone1_data.data_vertices_list, NUM_OF_MULTI_TARGET)
+        bone1_data.trans_status += f' copy X{NUM_OF_MULTI_TARGET}'
+        bone2_data.data_vertices_list = data_vertices_copy(bone2_data.data_vertices_list, NUM_OF_MULTI_TARGET)
+        bone2_data.trans_status += f' copy X{NUM_OF_MULTI_TARGET}'
+        skin_data.data_vertices_list = data_vertices_copy(skin_data.data_vertices_list, NUM_OF_MULTI_TARGET)
+        skin_data.trans_status += f' copy X{NUM_OF_MULTI_TARGET}'
 
-        np.tile(bone1_data.data_vertices_list, [NUM_OF_MULTI_TARGET, 1, 1])
-        # 각 input data에 multi target 적용
-        multi_data_list = []
-        print(len(bone1_data.data_vertices_list))
-        exit()
-        for i in range(len(bone1_data.data_vertices_list)):
-            tile_all_data_except_target = np.tile(input_data_except_target[i], [NUM_OF_MULTI_TARGET, 1, 1])
-            multi_tar = np.array(target_data.data_vertices_list)[
-                        (NUM_OF_MULTI_TARGET * i):(NUM_OF_MULTI_TARGET * (i+1)), :, :]
-            multi_data = np.concatenate((tile_all_data_except_target, multi_tar), axis=1)
-            multi_data_list.append(multi_data)
-        input_data = np.concatenate(multi_data_list, axis=0)
-    else:
-        input_data = data_concatenate(bone1_data.data_vertices_list, bone2_data.data_vertices_list,
-                                      skin_data.data_vertices_list, target_data.data_vertices_list)
+    input_data = data_concatenate(bone1_data.data_vertices_list, bone2_data.data_vertices_list,
+                                  skin_data.data_vertices_list, target_data.data_vertices_list)
 
     print_data_information(target_data, bone1_data, bone2_data, skin_data)
     print(f'input data size: {input_data.shape}')
@@ -468,7 +465,7 @@ ROT_Z = [-5.0, 5.0]  # z 축에 대한 최대 rotation 범위
 MTAR_X = [-18.0, 18.0]
 MTAR_Y = [-3.0, 7.0]
 MTAR_Z = [-2.0, 2.0]
-NUM_OF_MULTI_TARGET = 5
+NUM_OF_MULTI_TARGET = 3
 
 # 저장 명칭
 CLASS_N_DF = 'data_information'

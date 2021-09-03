@@ -66,5 +66,15 @@
 09.03
 - work14_increasing_1_3_1
   - version.ver 파일 저장 추가
+  - data_vertices_copy 함수 추가 
+  - multi target 생성시 복사 잘못되던 오류 해결 
 - funstions_my_1_3 >>> 삭제
+- wpr13_calculate_score_1_3_1
+  - call_data_version, call_dataframe, call_other_information, call_data_title, call_data_class_information 함수 추가
+  - calculate_point_to_line_length, abs_vector, euclidean_distance 함수를 옮겨옴
+  - calculate_point_to_line_length 함수의 계산 시간 단축 필요
+- work_see_training_data_1_3_1
+  - call_data_title 를 사용
+  - score map 적용 여부 추가
+  - code 구조 재구성
   
