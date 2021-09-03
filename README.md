@@ -63,4 +63,8 @@
 - work13_calculate_score_1_3_1
   - 버전에 따른 추출 방식 적용 중
 
+09.03
+- work14_increasing_1_3_1
+  - version.ver 파일 저장 추가
+- funstions_my_1_3 >>> 삭제
   

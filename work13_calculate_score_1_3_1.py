@@ -4,7 +4,7 @@
 # _3
 # score 최적점을 0 에서 1 로 변경
 # _1
-# epsilon 을 L1, L2, L3 각각의 최댓값으로 설정함
+# epsilon 을 l1, l2, l3 각각의 최댓값으로 설정함
 
 # _4
 # word 설명과 맞추기
@@ -18,30 +18,56 @@
 # data_list_title 함수 사용
 
 # 1_3_1
-# 버전에 따른 추출 방식 적용 중
-
+# call_data_version, call_dataframe, call_other_information, call_data_title, call_data_class_information 함수 추가 20210903
+# calculate_point_to_line_length, abs_vector, euclidean_distance 함수를 옮겨옴 20210903
 
 import numpy as np
 import time
 import os
 import dill
 import pandas as pd
-# import functions_my_1_3 as fmy
+import math
 
-def data_list_title(path):
-    """
-    class 객체를 불러와서 그 정보를 표시하는 함수
-    :param path: './data'
-    :return:
-    """
+
+def call_data_version(path):
+    file_list = os.listdir(path)
+    for file in file_list:
+        if file.endswith('ver'):
+            return file
+def call_dataframe(path):
+    df = pd.read_csv(f'{path}/data_information.csv')
+    df.drop(columns='Unnamed: 0', inplace=True)
+    df.fillna('0', inplace=True)
+    df.set_index('data_name', inplace=True)
+    return df
+def call_other_information(path):
+    with open(f'{path}/other_information.txt', 'r') as file:
+        line = file.readlines()
+    other_information = dict(eval('{' + ', '.join(line).replace('\n', '') + '}'))
+    return other_information
+def call_data_title(path):
     data_list = os.listdir(path)
-    for idx, data in enumerate(data_list):
-        array_size = np.load(f'{path}/{data}/input_data.npy').shape
-        with open(f'{path}/{data}/data_information.pkl', 'rb') as file:
-            _, bone1_data, _, _ = dill.load(file)
+    for data_name in data_list:
+        data_path = f'{path}/{data_name}'
+        data_version = call_data_version(data_path)
+        input_data = np.load(f'{data_path}/input_data.npy')
 
-        print(f'{data}: {array_size}, [{bone1_data.rand_sam_status}, {bone1_data.trans_status}, {bone1_data.rot_status}]')
+        other_information = call_other_information(data_path)
+        set_range = other_information['stl set range']
 
+        data_df = call_dataframe(data_path)
+        rand_sam = data_df.rand_sam_status[1]
+        rot = data_df.rot_status[0]
+        trans = data_df.trans_status[0]
+
+        print(f'{data_name:>7s} ({data_version}):{str(input_data.shape):>15s}, {set_range:>8s}, {rand_sam:>8s}, {rot:>7s}, {trans:>18s}')
+def call_data_class_information(path):
+    with open(f'{path}/data_information.pkl', 'rb') as file:
+        return dill.load(file)
+
+def print_data_information(*args):
+    for data in args:
+        print(data, '\n')
 
 def euclidean_distance(start, end):
     """
@@ -52,27 +78,46 @@ def euclidean_distance(start, end):
     """
     value = np.sqrt(np.sum(np.square(np.subtract(start, end)), axis=-1))
     return value
+def abs_vector(vertex):
+    value = np.sqrt(np.sum(np.square(vertex), axis=-1))
+    return value
+def calculate_point_to_line_length(center_array, start_array, target_array):
+    """
+    3차원 공간 상에서 center에서 target array 로 이어지는 line과 start array 간의 거리를 구하는 함수
+    :param center_array:
+    :param start_array:
+    :param target_array:
+    :return:
+    """
+    tar_to_start_array_vector = np.subtract(start_array, center_array)
+    tar_to_target_array_vector = np.subtract(target_array, center_array)
+
+    L = []
+    for i in range(target_array.shape[0]):
+        dot_product = np.dot(tar_to_start_array_vector, tar_to_target_array_vector[i])
+        abs_dot_product = np.absolute(dot_product)
+
+        cross_temp1 = abs_vector(tar_to_start_array_vector)
+        cross_temp2 = abs_vector(tar_to_target_array_vector[i])
+        abs_cross_product = cross_temp1 * cross_temp2
+        vec_between_vec_radian = np.arccos(abs_dot_product / abs_cross_product)
+        vec_between_vec_degree = vec_between_vec_radian * (180 / math.pi)
+
+        len_of_start_array_and_center = euclidean_distance(center_array, start_array)
+        L_set = np.multiply(len_of_start_array_and_center, np.sin(vec_between_vec_radian))
+        L.append(min(L_set))
+    L = np.array(L)
+    return L
 
 
-if __name__ == '__main__':
-    input_data = np.load(f'data/data1/input_data.npy')
-    data_df = pd.read_csv(f'data/data1/data_information.csv')
-    print(data_df.columns)
-    print(data_df['array_size'].value_counts())
-    print(data_df['trans_status'].value_counts())
-    print(data_df['rot_status'].value_counts())
-    print(data_df['rand_sam_status'].value_counts())
-    string = f'rand / 3, trans X 3, rot X 3, multi target X 5'
-    exit()
+def main():
     while True:
         # <title>------------------------------------------------------------
-        # data list
-        data_list_title(f'./data')
-        exit()
+        base_path = f'data'
+        call_data_title(base_path)
         data_num = int(input('\n 계산할 데이터 번호 입력 > '))
         if data_num == 10000:
             break
-
         switch = int(input('\nscore type 선택. 1: Max, 2: Min > '))
         if switch == 1:
             score_type = 'Max'
@@ -82,34 +127,36 @@ if __name__ == '__main__':
         # <score calculate>---------------------------------------------------------------------
         print(f'\nscore calculate...')
         start = time.time()
-        data_path = f'./data/data{data_num}'
+
+        data_path = f'{base_path}/data{data_num}'
         input_data = np.load(f'{data_path}/input_data.npy')
+        target_data, bone1_data, bone2_data, skin_data = call_data_class_information(data_path)
+        print_data_information(target_data, bone1_data, bone2_data, skin_data)
 
-        with open(f'{data_path}/data_information.pkl', 'rb') as file:
-            target_data, bone1_data, bone2_data, skin_data = dill.load(file)
-
-        # Bone1 및 Bone2 와 L1 간의 모든 거리 중 최소값(L2와 가장 가까운 Bone 좌표)구하기(L2, L3)
-        L1 = euclidean_distance(start=skin_data.data_vertices_list, end=target_data.data_vertices_list)
-        L2 = []
-        L3 = []
+        # Bone1 및 Bone2 와 l1 간의 모든 거리 중 최소값(l2와 가장 가까운 Bone 좌표)구하기(l2, l3)
+        l1 = euclidean_distance(start=skin_data.data_vertices_list, end=target_data.data_vertices_list)
+        l2 = []
+        l3 = []
         for idx, data in enumerate(input_data):
             print(f'{idx + 1}/{input_data.shape[0]}')
-            L2.append(fmy.calculate_point_to_line_length(np.array(target_data.data_vertices_list[idx]),
-                                                                  np.array(bone1_data.data_vertices_list[idx]),
-                                                                  np.array(skin_data.data_vertices_list[idx])))
-            L3.append(fmy.calculate_point_to_line_length(np.array(target_data.data_vertices_list[idx]),
-                                                                  np.array(bone2_data.data_vertices_list[idx]),
-                                                                  np.array(skin_data.data_vertices_list[idx])))
+            l2.append(calculate_point_to_line_length(np.array(target_data.data_vertices_list[idx]),
+                                                     np.array(bone1_data.data_vertices_list[idx]),
+                                                     np.array(skin_data.data_vertices_list[idx])))
+            l3.append(calculate_point_to_line_length(np.array(target_data.data_vertices_list[idx]),
+                                                     np.array(bone2_data.data_vertices_list[idx]),
+                                                     np.array(skin_data.data_vertices_list[idx])))
 
-        L1_e = np.add(L1, np.expand_dims(np.maximum.reduce(L1, axis=1), axis=1))
-        L2_e = np.add(L2, np.expand_dims(np.maximum.reduce(L2, axis=1), axis=1))
-        L3_e = np.add(L2, np.expand_dims(np.maximum.reduce(L3, axis=1), axis=1))
+        l1_e = np.add(l1, np.expand_dims(np.maximum.reduce(l1, axis=1), axis=1))
+        l2_e = np.add(l2, np.expand_dims(np.maximum.reduce(l2, axis=1), axis=1))
+        l3_e = np.add(l2, np.expand_dims(np.maximum.reduce(l3, axis=1), axis=1))
 
         if score_type == 'Max':
-            score = np.divide(np.maximum(L2_e, L3_e), L1_e)
+            score = np.divide(np.maximum(l2_e, l3_e), l1_e)
+        elif score_type == 'Min':
+            score = np.divide(l1_e, np.maximum(l2_e, l3_e))
         else:
-            score = np.divide(L1_e, np.maximum(L2_e, L3_e))
-
+            print(f'there is no score type "{score_type}"')
+            continue
 
         print('run time :', round(time.time() - start, 2), 'sec')
         np.save(f'{data_path}/score', score)
@@ -119,6 +166,9 @@ if __name__ == '__main__':
         print('\n')
     exit()
 
+
+if __name__ == '__main__':
+    main()
 #
 #
 #

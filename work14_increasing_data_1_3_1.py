@@ -42,13 +42,13 @@
 # 현재버전값 저장 추가
 # 버전에 따른 저장방식 설정 추가
 # Augmentation_1_3_1 을 병합
+# version.ver 파일 저장 추가 20210903
 
 import numpy as np
 import os
 import random
 import dill  # _7
 import pandas as pd  # _8
-# import Augmentation_1_3_1 as Aug
 import warnings
 import vtk
 import math
@@ -125,9 +125,9 @@ class DataInformation:
             print(f'{np.array(temp_list).shape} X {num_of_rand_sam}')
         print()
         self.data_vertices_list = ran_sam_vertices_list
-        self.rand_sam_status += f' rand/{num_of_rand_sam}'
+        self.rand_sam_status += f' rand /{num_of_rand_sam}'
 
-    def translate(self, xyz_offset, num_of_trans):
+    def translate(self, xyz_offset, num_of_trans, multi):
         """
         :param xyz_offset:
         :param num_of_trans:
@@ -146,7 +146,10 @@ class DataInformation:
         print(f'{np.array(result_vertices).shape}')
         print()
         self.data_vertices_list = result_vertices
-        self.trans_status += f' transX{num_of_trans}'
+        if multi is not None:
+            self.trans_status += f' multi X{num_of_trans}'
+        else:
+            self.trans_status += f' trans X{num_of_trans}'
 
     def rotation(self, xyz_rot_matrices, num_of_rot):
         """
@@ -178,8 +181,7 @@ class DataInformation:
         print(f'{all_result_vertices.shape}')
         print()
         self.data_vertices_list = all_result_vertices.tolist()
-        self.rot_status += f' rotX{num_of_rot}'
-
+        self.rot_status += f' rot X{num_of_rot}'
 
 def euclidean_distance(start, end):
     """
@@ -307,6 +309,7 @@ def extract_version():
 def main():
     global FIRST_STL_SET_NUM, LAST_STL_SET_NUM, UP_NUM_OF_SKIN_POINTS, UP_NUM_OF_BONE1_POINTS, UP_NUM_OF_BONE2_POINTS, NUM_OF_RAND_NUM
     global NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z, NUM_OF_ROT, ROT_X, ROT_Y, ROT_Z, MTAR_X, MTAR_Y, MTAR_Z, NUM_OF_MULTI_TARGET
+    global CLASS_N_DF, OTHER
 
     # 각 데이터별 class 세팅
     target_data = DataInformation('target')
@@ -338,7 +341,7 @@ def main():
         for i in range(len(target_data.data_vertices_list))
         for j in range(NUM_OF_RAND_NUM)
     ]
-    target_data.rand_sam_status = f'copyX{NUM_OF_RAND_NUM}'
+    target_data.rand_sam_status = f'copy X{NUM_OF_RAND_NUM}'
     bone1_data.random_sampling(UP_NUM_OF_BONE1_POINTS, NUM_OF_RAND_NUM)
     bone2_data.random_sampling(UP_NUM_OF_BONE2_POINTS, NUM_OF_RAND_NUM)
     skin_data.random_sampling(UP_NUM_OF_SKIN_POINTS, NUM_OF_RAND_NUM)
@@ -352,10 +355,10 @@ def main():
         skin_trans_offset = make_trans_offset(len(skin_data.data_vertices_list), NUM_OF_TRANS, TRANS_X, TRANS_Y, TRANS_Z)
 
         # translate
-        target_data.translate(target_trans_offset, NUM_OF_TRANS)
-        bone1_data.translate(bone_trans_offset, NUM_OF_TRANS)
-        bone2_data.translate(bone_trans_offset, NUM_OF_TRANS)
-        skin_data.translate(skin_trans_offset, NUM_OF_TRANS)
+        target_data.translate(target_trans_offset, NUM_OF_TRANS, None)
+        bone1_data.translate(bone_trans_offset, NUM_OF_TRANS, None)
+        bone2_data.translate(bone_trans_offset, NUM_OF_TRANS, None)
+        skin_data.translate(skin_trans_offset, NUM_OF_TRANS, None)
     else:
         print(f'not translate')
 
@@ -383,9 +386,13 @@ def main():
     # <multi target>----------------------------------------------------
     if NUM_OF_MULTI_TARGET > 1:
         mul_tar_offset = make_trans_offset(len(target_data.data_vertices_list), NUM_OF_MULTI_TARGET, MTAR_X, MTAR_Y, MTAR_Z)
-        target_data.translate(mul_tar_offset, NUM_OF_MULTI_TARGET)
+        target_data.translate(mul_tar_offset, NUM_OF_MULTI_TARGET, 'on')
+
+        np.tile(bone1_data.data_vertices_list, [NUM_OF_MULTI_TARGET, 1, 1])
         # 각 input data에 multi target 적용
         multi_data_list = []
+        print(len(bone1_data.data_vertices_list))
+        exit()
         for i in range(len(bone1_data.data_vertices_list)):
             tile_all_data_except_target = np.tile(input_data_except_target[i], [NUM_OF_MULTI_TARGET, 1, 1])
             multi_tar = np.array(target_data.data_vertices_list)[
@@ -394,7 +401,8 @@ def main():
             multi_data_list.append(multi_data)
         input_data = np.concatenate(multi_data_list, axis=0)
     else:
-        input_data = data_concatenate(input_data_except_target, target_data.data_vertices_list)
+        input_data = data_concatenate(bone1_data.data_vertices_list, bone2_data.data_vertices_list,
+                                      skin_data.data_vertices_list, target_data.data_vertices_list)
 
     print_data_information(target_data, bone1_data, bone2_data, skin_data)
     print(f'input data size: {input_data.shape}')
@@ -408,23 +416,26 @@ def main():
         os.makedirs(f'{data_save_path}')  # 그 폴더를 만들기
 
     # class 객체 저장 : 각 데이터별 인스턴스 정보
-    with open(f'{data_save_path}/data_information.pkl', 'wb') as file:
+    with open(f'{data_save_path}/{CLASS_N_DF}.pkl', 'wb') as file:
         dill.dump(all_data, file)
 
     # csv 저장 : 각 데이터별 인스턴스 정보
     all_data_df = pd.DataFrame([target_data.__dict__, bone1_data.__dict__, bone2_data.__dict__, skin_data.__dict__])
     all_data_df.rename(columns={'data_vertices_list':'array_size'}, inplace=True)
     all_data_df['array_size'] = all_data_df['array_size'].apply(lambda x: np.array(x).shape)
-    all_data_df.to_csv(f'{data_save_path}/data_information.csv', encoding='utf-8-sig')
+    all_data_df.to_csv(f'{data_save_path}/{CLASS_N_DF}.csv', encoding='utf-8-sig')
 
     # npy 저장 : 학습용 input data
     np.save(f'{data_save_path}/input_data', input_data)
 
     # txt 저장 : 그외 기타 정보
-    with open(f'{data_save_path}/other_information.txt', 'w',
+    with open(f'{data_save_path}/{OTHER}.txt', 'w',
               encoding='utf8') as file:
-        file.write(f'stl set range: {FIRST_STL_SET_NUM} ~ {LAST_STL_SET_NUM}\n')
-        file.write(f'code current version: {extract_version()}')
+        file.write(f"'stl set range': '{FIRST_STL_SET_NUM} ~ {LAST_STL_SET_NUM}'\n")
+
+    # ver 저장: 현재 코드 버전
+    with open(f'{data_save_path}/{extract_version()}.ver', 'w') as file:
+        file.close()
     exit()
 
 
@@ -459,6 +470,9 @@ MTAR_Y = [-3.0, 7.0]
 MTAR_Z = [-2.0, 2.0]
 NUM_OF_MULTI_TARGET = 5
 
+# 저장 명칭
+CLASS_N_DF = 'data_information'
+OTHER = 'other_information'
 
 if __name__ == '__main__':
     main()
