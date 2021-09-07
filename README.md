@@ -77,4 +77,8 @@
   - call_data_title 를 사용
   - score map 적용 여부 추가
   - code 구조 재구성
+
+09.07
+- work13_calculate_score_1_3_1
+  - calculate_point_to_line_length 함수의 시간 단축 함수는 완성했지만 전체를 한번에 계산하는 방식은 메모리에러 발생하여 순차계산 적용
   

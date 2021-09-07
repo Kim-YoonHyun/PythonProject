@@ -134,7 +134,7 @@ def rendering():
         bone2_actor = fvtk.point_actor(bone2_data.data_vertices_list[i], BONE2_POINT_SIZE, BONE2_POINT_COLOR)
         bone2_actor.SetPosition(0, 0, 0)
 
-        if score == 'on':
+        if SCORE == 'on':
             skin_actor = fvtk.point_actor(skin_data.data_vertices_list[i], SKIN_POINT_SIZE, 'None')
             fvtk.assign_value_to_polydata(skin_actor.GetMapper().GetInput(), score_distribution[i])
             skin_actor.SetPosition(-POSITION, 0, 0)

@@ -21,6 +21,7 @@
 # call_data_version, call_dataframe, call_other_information, call_data_title, call_data_class_information 함수 추가 20210903
 # calculate_point_to_line_length, abs_vector, euclidean_distance 함수를 옮겨옴 20210903
 # calculate_point_to_line_length 함수의 계산 시간 단축 필요 20210903
+# calculate_point_to_line_length 함수의 시간 단축 함수는 완성했지만 전체를 한번에 계산하는 방식은 메모리에러 발생하여 순차계산 적용
 
 import numpy as np
 import time
@@ -28,7 +29,6 @@ import os
 import dill
 import pandas as pd
 import math
-
 
 def call_data_version(path):
     file_list = os.listdir(path)
@@ -82,33 +82,67 @@ def euclidean_distance(start, end):
 def abs_vector(vertex):
     value = np.sqrt(np.sum(np.square(vertex), axis=-1))
     return value
-def calculate_point_to_line_length(center_array, start_array, target_array):
+
+
+def calculate_point_to_line_length(start_array, target_array, side_array):
     """
+    center >>> start
+    start >>> side
     3차원 공간 상에서 center에서 target array 로 이어지는 line과 start array 간의 거리를 구하는 함수
     :param center_array:
     :param start_array:
     :param target_array:
     :return:
     """
-    tar_to_start_array_vector = np.subtract(start_array, center_array)
-    tar_to_target_array_vector = np.subtract(target_array, center_array)
+    side_to_target_array_vector = np.subtract(side_array, target_array)
+    start_to_target_array_vector = np.subtract(start_array, target_array)
 
-    L = []
-    for i in range(target_array.shape[0]):
-        dot_product = np.dot(tar_to_start_array_vector, tar_to_target_array_vector[i])
-        abs_dot_product = np.absolute(dot_product)
+    dot_product = np.dot(side_to_target_array_vector, start_to_target_array_vector.T)
+    dot_product_trans = dot_product.T
+    abs_dot_product_trans = np.absolute(dot_product_trans)
 
-        cross_temp1 = abs_vector(tar_to_start_array_vector)
-        cross_temp2 = abs_vector(tar_to_target_array_vector[i])
-        abs_cross_product = cross_temp1 * cross_temp2
-        vec_between_vec_radian = np.arccos(abs_dot_product / abs_cross_product)
-        vec_between_vec_degree = vec_between_vec_radian * (180 / math.pi)
+    cross_temp1 = abs_vector(side_to_target_array_vector)
+    cross_temp2 = np.expand_dims(abs_vector(start_to_target_array_vector), axis=-1)
+    abs_cross_product = np.multiply(cross_temp1, cross_temp2)
 
-        len_of_start_array_and_center = euclidean_distance(center_array, start_array)
-        L_set = np.multiply(len_of_start_array_and_center, np.sin(vec_between_vec_radian))
-        L.append(min(L_set))
-    L = np.array(L)
-    return L
+    vec_between_vec_radian = np.arccos(abs_dot_product_trans / abs_cross_product)
+    vec_between_vec_degree = vec_between_vec_radian * (180 / math.pi)
+
+    len_of_target_array_and_side = euclidean_distance(target_array, side_array)
+    l_set = np.multiply(len_of_target_array_and_side, np.sin(vec_between_vec_radian))
+    min_l_set = np.minimum.reduce(l_set, axis=-1)
+    return min_l_set
+
+
+def calculate_point_to_line_length_memoryover(start_array, target_array, side_array):
+    side_to_target_array_vector = np.subtract(side_array, target_array)
+
+    start_to_target_array_vector = np.subtract(start_array, target_array)
+    start_to_target_array_vector_trans = np.swapaxes(start_to_target_array_vector, 1, 2)
+
+    dot_product = np.dot(side_to_target_array_vector, start_to_target_array_vector_trans)
+    ai = np.arange(0, start_array.shape[0]).reshape(start_array.shape[0], 1, 1, 1)
+    dot_product_take = np.squeeze(np.take_along_axis(dot_product, ai, axis=2))
+    dot_product_take_trans = np.swapaxes(dot_product_take, 1, 2)
+    abs_dot_product_trans = np.absolute(dot_product_take_trans)
+
+    side_to_target_array_vector_abs = abs_vector(side_to_target_array_vector)
+    start_to_target_array_vector_abs = np.expand_dims(abs_vector(start_to_target_array_vector), axis=-1)
+    start_to_target_array_vector_abs = np.expand_dims(np.concatenate(start_to_target_array_vector_abs, axis=-2),
+                                                      axis=-1)
+
+    abs_cross_product = np.multiply(side_to_target_array_vector_abs, start_to_target_array_vector_abs)
+    abs_cross_product = abs_cross_product.reshape(start_array.shape[0], start_array.shape[1],
+                                                  start_array.shape[0], side_array.shape[1])
+    abs_cross_product = np.squeeze(np.take_along_axis(abs_cross_product, ai, axis=2))
+
+    vec_between_vec_radian = np.arccos(abs_dot_product_trans / abs_cross_product)
+    vec_between_vec_degree = vec_between_vec_radian * (180 / math.pi)
+
+    len_of_target_array_and_side = np.expand_dims(euclidean_distance(target_array, side_array), axis=-2)
+    l_set = np.multiply(len_of_target_array_and_side, np.sin(vec_between_vec_radian))
+    min_l_set = np.minimum.reduce(l_set, axis=-1)
+    return min_l_set
 
 
 def main():
@@ -138,15 +172,26 @@ def main():
         l1 = euclidean_distance(start=skin_data.data_vertices_list, end=target_data.data_vertices_list)
         l2 = []
         l3 = []
+
         for idx, data in enumerate(input_data):
             print(f'{idx + 1}/{input_data.shape[0]}')
-            l2.append(calculate_point_to_line_length(np.array(target_data.data_vertices_list[idx]),
-                                                     np.array(bone1_data.data_vertices_list[idx]),
-                                                     np.array(skin_data.data_vertices_list[idx])))
-            l3.append(calculate_point_to_line_length(np.array(target_data.data_vertices_list[idx]),
-                                                     np.array(bone2_data.data_vertices_list[idx]),
-                                                     np.array(skin_data.data_vertices_list[idx])))
-
+            l2.append(calculate_point_to_line_length(np.array(skin_data.data_vertices_list[idx]),
+                                                      np.array(target_data.data_vertices_list[idx]),
+                                                      np.array(bone1_data.data_vertices_list[idx])
+                                                      )
+                      )
+            l3.append(calculate_point_to_line_length(np.array(skin_data.data_vertices_list[idx]),
+                                                      np.array(target_data.data_vertices_list[idx]),
+                                                      np.array(bone2_data.data_vertices_list[idx]),
+                                                      )
+                      )
+        # l2 = calculate_point_to_line_length_memoryover(np.array(skin_data.data_vertices_list),
+        #                                     np.array(target_data.data_vertices_list),
+        #                                      np.array(bone1_data.data_vertices_list))
+        # l3 = calculate_point_to_line_length_memoryover(np.array(skin_data.data_vertices_list),
+        #                                           np.array(target_data.data_vertices_list),
+        #                                           np.array(bone2_data.data_vertices_list),
+        #                                           )
         l1_e = np.add(l1, np.expand_dims(np.maximum.reduce(l1, axis=1), axis=1))
         l2_e = np.add(l2, np.expand_dims(np.maximum.reduce(l2, axis=1), axis=1))
         l3_e = np.add(l2, np.expand_dims(np.maximum.reduce(l3, axis=1), axis=1))
